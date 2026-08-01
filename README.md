@@ -1,5 +1,7 @@
 # Financial Metrics Database
 
+> **Live deployment**: This app is deployed on Vercel. See `vercel.json` and `api/index.py` for the serverless configuration.
+
 A comprehensive database system for collecting, parsing, and analyzing **real financial metrics** from Yahoo Finance API for publicly traded companies.
 
 ## Overview
