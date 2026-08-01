@@ -10,7 +10,7 @@ import threading
 from flask import Flask, render_template, request, jsonify
 
 from .chatbot import FinancialChatbot
-from .db_backend import get_connection
+from .db_backend import get_connection, backend_name, is_cloud_configured
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -39,6 +39,30 @@ def get_db_connection():
 def index():
     """Render main interface with tabs"""
     return render_template('index.html')
+
+
+@app.route('/status')
+def status():
+    """Report which database backend this deployment is using."""
+    info = {
+        'backend': backend_name(),
+        'cloud': is_cloud_configured(),
+    }
+    try:
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM companies")
+            info['companies'] = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM all_metrics")
+            info['metrics'] = cursor.fetchone()[0]
+            info['database_ok'] = True
+        finally:
+            conn.close()
+    except Exception as e:
+        info['database_ok'] = False
+        info['error'] = str(e)
+    return jsonify(info)
 
 
 # ---------------------------------------------------------------------------
