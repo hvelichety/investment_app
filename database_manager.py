@@ -151,8 +151,82 @@ class MetricsDatabase:
             )
         """)
         
+        self._create_views()
+        
         self.conn.commit()
         print("✓ Database schema created successfully")
+    
+    def _create_views(self):
+        """Create convenience views that join company info into each metric table"""
+        metric_tables = [
+            'revenue_metrics',
+            'profitability_metrics',
+            'margin_metrics',
+            'balance_sheet_metrics',
+            'cash_flow_metrics',
+            'per_share_metrics',
+            'operational_metrics',
+            'valuation_metrics',
+            'all_metrics',
+        ]
+        
+        for table in metric_tables:
+            self.cursor.execute(f"""
+                CREATE VIEW IF NOT EXISTS v_{table} AS
+                SELECT
+                    c.ticker,
+                    c.company_name,
+                    f.filing_type,
+                    f.filing_date,
+                    m.*
+                FROM {table} m
+                JOIN filings f ON m.filing_id = f.filing_id
+                JOIN companies c ON f.company_id = c.company_id
+                ORDER BY c.ticker, f.filing_date DESC
+            """)
+        
+        # One wide view with everything side by side per filing
+        self.cursor.execute("""
+            CREATE VIEW IF NOT EXISTS v_company_overview AS
+            SELECT
+                c.ticker,
+                c.company_name,
+                f.filing_type,
+                f.filing_date,
+                r.total_revenue,
+                p.gross_profit,
+                p.operating_income,
+                p.net_income,
+                p.ebitda,
+                m.gross_margin,
+                m.operating_margin,
+                m.net_margin,
+                b.total_assets,
+                b.total_liabilities,
+                b.stockholders_equity,
+                b.cash_and_equivalents,
+                b.total_debt,
+                cf.operating_cash_flow,
+                cf.free_cash_flow,
+                cf.capex,
+                ps.eps,
+                ps.book_value_per_share,
+                o.research_and_development,
+                o.sales_and_marketing,
+                o.employee_count,
+                v.market_cap
+            FROM filings f
+            JOIN companies c ON f.company_id = c.company_id
+            LEFT JOIN revenue_metrics r ON f.filing_id = r.filing_id
+            LEFT JOIN profitability_metrics p ON f.filing_id = p.filing_id
+            LEFT JOIN margin_metrics m ON f.filing_id = m.filing_id
+            LEFT JOIN balance_sheet_metrics b ON f.filing_id = b.filing_id
+            LEFT JOIN cash_flow_metrics cf ON f.filing_id = cf.filing_id
+            LEFT JOIN per_share_metrics ps ON f.filing_id = ps.filing_id
+            LEFT JOIN operational_metrics o ON f.filing_id = o.filing_id
+            LEFT JOIN valuation_metrics v ON f.filing_id = v.filing_id
+            ORDER BY c.ticker, f.filing_date DESC
+        """)
     
     def insert_company(self, ticker: str, cik: Optional[str] = None, company_name: Optional[str] = None) -> int:
         """Insert or get company ID"""

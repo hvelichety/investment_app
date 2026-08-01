@@ -95,18 +95,20 @@ def get_examples():
 
 @app.route('/db/tables')
 def db_tables():
-    """List all tables with row counts"""
+    """List all tables and views with row counts"""
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            "SELECT name, type FROM sqlite_master "
+            "WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%' "
+            "ORDER BY type, name"
         )
         tables = []
         for row in cursor.fetchall():
             name = row['name']
             count = cursor.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0]
-            tables.append({'name': name, 'rows': count})
+            tables.append({'name': name, 'rows': count, 'kind': row['type']})
         return jsonify({'tables': tables})
     finally:
         conn.close()
@@ -122,9 +124,9 @@ def db_table(table_name):
     try:
         cursor = conn.cursor()
 
-        # Validate table name against actual tables to prevent SQL injection
+        # Validate name against actual tables/views to prevent SQL injection
         cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            "SELECT name FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%'"
         )
         valid_tables = {row['name'] for row in cursor.fetchall()}
         if table_name not in valid_tables:
