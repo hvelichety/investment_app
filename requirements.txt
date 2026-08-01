@@ -6,3 +6,4 @@ sqlite3-python>=1.0.0
 sec-edgar-downloader>=5.0.0
 python-dateutil>=2.8.2
 openpyxl>=3.1.2
+yfinance>=0.2.40
