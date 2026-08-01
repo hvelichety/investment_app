@@ -20,13 +20,18 @@ The database contains **real financial metrics from Yahoo Finance** for:
 
 ## Features
 
+- **🤖 AI Chatbot**: Natural language interface with interactive visualizations
+  - Ask questions in plain English
+  - Get instant responses with charts and graphs
+  - Bar charts, line charts, pie charts, and more
+  - Modern web interface with real-time updates
 - **Real Financial Data**: Fetches actual data from Yahoo Finance API
 - **Comprehensive Metrics**: 22+ financial metrics tracked over 5 years
 - **7 Companies**: AMD, CRM, GOOG, NVDA, RH, SPCX, TSLA
 - **560 Total Metrics**: Real financial data points
 - **37 Filings**: Historical data from 2021-2026
 - **Structured Database**: SQLite with normalized schema
-- **Query Interface**: Easy-to-use Python API for data analysis
+- **Query Interface**: Python API and SQL access
 - **Excel Export**: Export all data to Excel with multiple sheets
 - **Automated Updates**: Re-run script to get latest data
 ## Real Data Examples
@@ -70,6 +75,25 @@ pip install -r requirements.txt
 ## Usage
 
 ### Quick Start
+
+### Option 1: Interactive Chatbot (Recommended) 🆕
+
+```bash
+pip install -r requirements.txt
+python3 app.py
+```
+
+Open your browser to **http://localhost:5000** and chat with your financial data!
+
+**Ask questions like:**
+- "Show me an overview of all companies"
+- "Compare profitability across companies"
+- "Show NVDA revenue trend over time"
+- "What are the latest metrics for TSLA?"
+
+The chatbot will respond with **interactive charts and graphs**!
+
+### Option 2: Populate Database with Real Data
 
 Run the complete pipeline to fetch real data from Yahoo Finance:
 
