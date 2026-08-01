@@ -226,6 +226,25 @@
             border-left-color: var(--primary);
         }
 
+        .clear-chat {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: transparent;
+            font-family: inherit;
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.13s;
+        }
+
+        .clear-chat:hover {
+            border-color: #fca5a5;
+            color: #dc2626;
+            background: #fef2f2;
+        }
+
         /* ============ Chat ============ */
         .chat-main {
             flex: 1;
@@ -747,6 +766,9 @@
                 <div class="sidebar-label">Try asking</div>
                 <div id="examples-container"></div>
             </div>
+            <div class="sidebar-section">
+                <button class="clear-chat" id="clear-chat">Clear conversation</button>
+            </div>
         </div>
 
         <div class="chat-main">
@@ -916,7 +938,29 @@
             });
         }
 
-        function addMessage(content, isUser, chartConfig = null) {
+        // ---- Chat history persistence (survives refresh via localStorage) ----
+        const HISTORY_KEY = 'finmetrics_chat_history';
+        const HISTORY_MAX = 60;
+        let chatHistory = [];
+        try {
+            chatHistory = JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+        } catch (e) {
+            chatHistory = [];
+        }
+
+        function saveHistory() {
+            try {
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(chatHistory.slice(-HISTORY_MAX)));
+            } catch (e) {
+                // Storage quota exceeded — drop chart data from oldest half and retry
+                try {
+                    const trimmed = chatHistory.slice(-Math.floor(HISTORY_MAX / 2));
+                    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+                } catch (e2) { /* give up silently; chat still works, just won't persist */ }
+            }
+        }
+
+        function addMessage(content, isUser, chartConfig = null, save = true) {
             const msg = document.createElement('div');
             msg.className = `message ${isUser ? 'user' : 'bot'}`;
 
@@ -958,8 +1002,26 @@
             }
 
             chatScroll.scrollTop = chatScroll.scrollHeight;
+
+            if (save) {
+                chatHistory.push({ content, isUser, chartConfig: chartConfig || null });
+                saveHistory();
+            }
             return msg;
         }
+
+        // Restore previous conversation on page load
+        if (chatHistory.length) {
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) emptyState.remove();
+            chatHistory.forEach(m => addMessage(m.content, m.isUser, m.chartConfig, false));
+        }
+
+        document.getElementById('clear-chat').addEventListener('click', () => {
+            localStorage.removeItem(HISTORY_KEY);
+            chatHistory = [];
+            location.reload();
+        });
 
         function addTyping() {
             const msg = document.createElement('div');
@@ -1000,7 +1062,7 @@
                 addMessage(data.response, false, data.chart_config);
             } catch (err) {
                 removeTyping();
-                addMessage('Something went wrong. Please try again.', false);
+                addMessage('Something went wrong. Please try again.', false, null, false);
             }
 
             sendButton.disabled = false;
