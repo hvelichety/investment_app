@@ -6,11 +6,11 @@ Provides convenient methods to query and analyze the financial metrics database
 import sqlite3
 import pandas as pd
 from typing import List, Optional, Dict
-from database_manager import MetricsDatabase
+from .database_manager import MetricsDatabase
 
 
 class MetricsQuery:
-    def __init__(self, db_path: str = "financial_metrics.db"):
+    def __init__(self, db_path: str = None):
         self.db = MetricsDatabase(db_path)
         self.db.connect()
     

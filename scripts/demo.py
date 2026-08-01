@@ -2,8 +2,13 @@
 Quick Demo - Shows database functionality
 """
 
-from query_interface import MetricsQuery
-import pandas as pd
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.query_interface import MetricsQuery  # noqa: E402
+import pandas as pd  # noqa: E402
 
 print("=" * 70)
 print("FINANCIAL METRICS DATABASE - QUICK DEMO")

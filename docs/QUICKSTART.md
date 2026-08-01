@@ -86,7 +86,7 @@ Click company tags in sidebar to:
 
 Prefer command line?
 ```bash
-python3 chatbot.py
+python3 -m src.chatbot
 ```
 
 Ask questions and get text responses!
@@ -105,7 +105,7 @@ query.close()
 
 ### SQL Queries
 ```bash
-sqlite3 financial_metrics.db
+sqlite3 data/financial_metrics.db
 
 SELECT * FROM companies;
 SELECT * FROM revenue_metrics;
@@ -113,14 +113,14 @@ SELECT * FROM revenue_metrics;
 
 ### Excel
 ```bash
-open financial_metrics_real.xlsx
+open data/financial_metrics_real.xlsx
 ```
 
 ## Update Data
 
 Get the latest financial data:
 ```bash
-python3 populate_real_data.py
+python3 scripts/populate_real_data.py
 ```
 
 This fetches fresh data from Yahoo Finance!
@@ -144,7 +144,7 @@ python3 -c "from app import app; app.run(port=5001)"
 ### Database not found?
 ```bash
 # Create database with real data
-python3 populate_real_data.py
+python3 scripts/populate_real_data.py
 ```
 
 ### Charts not showing?

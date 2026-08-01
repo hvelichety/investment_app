@@ -7,10 +7,10 @@
 pip install -r requirements.txt
 
 # 2. Populate database with sample data
-python3 populate_sample_data.py
+python3 scripts/populate_sample_data.py
 
 # 3. Query the database
-python3 query_interface.py
+python3 -m src.query_interface
 ```
 
 ## Database Overview
@@ -146,7 +146,7 @@ query.close()
 ### SQL Queries
 
 ```bash
-sqlite3 financial_metrics.db
+sqlite3 data/financial_metrics.db
 ```
 
 ```sql

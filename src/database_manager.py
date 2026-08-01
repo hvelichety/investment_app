@@ -11,14 +11,15 @@ import pandas as pd
 
 
 class MetricsDatabase:
-    def __init__(self, db_path: str = "financial_metrics.db"):
+    def __init__(self, db_path: str = None):
+        """db_path defaults to data/financial_metrics.db (see db_backend)."""
         self.db_path = db_path
         self.conn = None
         self.cursor = None
     
     def connect(self):
         """Connect to the database (cloud if configured, else local file)"""
-        from db_backend import get_connection
+        from .db_backend import get_connection
         self.conn = get_connection(db_path=self.db_path)
         self.cursor = self.conn.cursor()
     
@@ -430,7 +431,7 @@ if __name__ == "__main__":
     db.connect()
     db.create_schema()
     
-    print("\nDatabase schema created at financial_metrics.db")
+    print("\nDatabase schema created at data/financial_metrics.db")
     print("\nTables created:")
     print("  - companies")
     print("  - filings")
