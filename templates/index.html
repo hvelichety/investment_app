@@ -332,6 +332,8 @@
             border-radius: var(--radius);
             padding: 8px;
             background: var(--bg);
+            width: 100%;
+            min-height: 436px;
         }
 
         .typing {
@@ -825,16 +827,26 @@
                 const card = document.createElement('div');
                 card.className = 'chart-card';
                 msg.appendChild(card);
-                const layout = Object.assign({}, CHART_LAYOUT_DEFAULTS, chartConfig.layout, {
+
+                const base = chartConfig.layout || {};
+                const layout = Object.assign({}, CHART_LAYOUT_DEFAULTS, base, {
                     font: CHART_LAYOUT_DEFAULTS.font,
-                    xaxis: Object.assign({}, CHART_LAYOUT_DEFAULTS.xaxis, chartConfig.layout.xaxis),
-                    yaxis: Object.assign({}, CHART_LAYOUT_DEFAULTS.yaxis, chartConfig.layout.yaxis),
+                    // Explicit height prevents the plot area from collapsing
+                    height: 420,
+                    autosize: true,
+                    xaxis: Object.assign({}, CHART_LAYOUT_DEFAULTS.xaxis, base.xaxis),
+                    yaxis: Object.assign({}, CHART_LAYOUT_DEFAULTS.yaxis, base.yaxis),
                     title: Object.assign({}, CHART_LAYOUT_DEFAULTS.title,
-                        typeof chartConfig.layout.title === 'string'
-                            ? { text: chartConfig.layout.title }
-                            : chartConfig.layout.title)
+                        typeof base.title === 'string' ? { text: base.title } : base.title)
                 });
-                Plotly.newPlot(card, chartConfig.data, layout, { responsive: true, displaylogo: false });
+
+                Plotly.newPlot(card, chartConfig.data, layout, {
+                    responsive: true,
+                    displaylogo: false
+                }).then(() => {
+                    // Re-measure once attached and painted, so width is correct
+                    requestAnimationFrame(() => Plotly.Plots.resize(card));
+                });
             }
 
             chatScroll.scrollTop = chatScroll.scrollHeight;
@@ -889,6 +901,13 @@
 
         sendButton.addEventListener('click', sendMessage);
         userInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
+
+        // Keep charts sized correctly when the window changes
+        window.addEventListener('resize', () => {
+            document.querySelectorAll('.chart-card').forEach(el => {
+                if (el._fullLayout) Plotly.Plots.resize(el);
+            });
+        });
 
         // ============ Database ============
         const PAGE_SIZE = 50;
