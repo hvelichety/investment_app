@@ -10,6 +10,7 @@
           "chatbot.py",
           "query_interface.py",
           "database_manager.py",
+          "db_backend.py",
           "financial_metrics.db",
           "templates/**"
         ]
