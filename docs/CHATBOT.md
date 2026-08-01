@@ -37,7 +37,7 @@ Then open your browser to: **http://localhost:5000**
 
 ```bash
 # Run in terminal
-python3 chatbot.py
+python3 -m src.chatbot
 ```
 
 ## 💬 Example Queries
@@ -289,8 +289,8 @@ Get example queries
 ## 🐛 Troubleshooting
 
 ### Chatbot not responding
-- Check database exists: `ls financial_metrics.db`
-- Verify data: `python3 demo.py`
+- Check database exists: `ls data/financial_metrics.db`
+- Verify data: `python3 scripts/demo.py`
 
 ### Charts not displaying
 - Check browser console for errors
@@ -300,7 +300,7 @@ Get example queries
 ### "No data found"
 - Verify ticker is correct (uppercase)
 - Check database has data for that company
-- Re-run: `python3 populate_real_data.py`
+- Re-run: `python3 scripts/populate_real_data.py`
 
 ## 📈 Performance
 

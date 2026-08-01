@@ -100,13 +100,13 @@ A comprehensive financial metrics database system has been created with complete
 pip install -r requirements.txt
 
 # Populate database with sample data
-python3 populate_sample_data.py
+python3 scripts/populate_sample_data.py
 
 # Run test suite
-python3 test_suite.py
+python3 tests/test_suite.py
 
 # Query the database
-python3 query_interface.py
+python3 -m src.query_interface
 
 # View in Excel
 open financial_metrics.xlsx

@@ -26,20 +26,20 @@ jobs:
 
       - name: Rebuild database with fresh Yahoo Finance data
         run: |
-          rm -f financial_metrics.db
-          python populate_real_data.py
+          rm -f data/financial_metrics.db
+          python scripts/populate_real_data.py
 
       - name: Sync cloud database (Turso)
         env:
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
-        run: python migrate_to_cloud.py
+        run: python scripts/migrate_to_cloud.py
 
       - name: Commit and push updated data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add financial_metrics.db financial_metrics_real.xlsx
+          git add data/financial_metrics.db data/financial_metrics_real.xlsx
           if git diff --cached --quiet; then
             echo "No data changes this week."
           else

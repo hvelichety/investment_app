@@ -3,10 +3,17 @@ Populate Database with Real Yahoo Finance Data
 Fetches actual financial data from Yahoo Finance for all companies
 """
 
-from yahoo_finance_fetcher import YahooFinanceDataFetcher
-from database_manager import MetricsDatabase
-from query_interface import MetricsQuery
+import os
+import sys
 import time
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from scripts.yahoo_finance_fetcher import YahooFinanceDataFetcher  # noqa: E402
+from src.database_manager import MetricsDatabase  # noqa: E402
+from src.query_interface import MetricsQuery  # noqa: E402
+
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 
 
 def populate_real_data():
@@ -94,8 +101,9 @@ def populate_real_data():
     print("=" * 70)
     
     try:
-        db.export_to_excel('financial_metrics_real.xlsx')
-        print("✓ Excel exported to: financial_metrics_real.xlsx")
+        excel_path = os.path.join(DATA_DIR, 'financial_metrics_real.xlsx')
+        db.export_to_excel(excel_path)
+        print(f"✓ Excel exported to: {excel_path}")
     except Exception as e:
         print(f"✗ Excel export error: {e}")
     
@@ -145,12 +153,12 @@ def populate_real_data():
     print("REAL DATA COLLECTION COMPLETE")
     print("=" * 70)
     print("\n📁 Output files:")
-    print("   - financial_metrics.db         (SQLite database with REAL data)")
-    print("   - financial_metrics_real.xlsx  (Excel export)")
+    print("   - data/financial_metrics.db         (SQLite database with REAL data)")
+    print("   - data/financial_metrics_real.xlsx  (Excel export)")
     print("\n💡 Next steps:")
-    print("   - Run: python3 demo.py")
-    print("   - Explore: financial_metrics_real.xlsx")
-    print("   - Query: python3 query_interface.py")
+    print("   - Run: python3 scripts/demo.py")
+    print("   - Explore: data/financial_metrics_real.xlsx")
+    print("   - Launch the web app: python3 app.py")
 
 
 if __name__ == "__main__":

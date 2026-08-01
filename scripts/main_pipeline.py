@@ -4,12 +4,16 @@ Orchestrates the complete data collection, parsing, and database population proc
 """
 
 import json
+import os
 import time
 import sys
 from typing import Dict, List
-from sec_data_fetcher import SECDataFetcher
-from metrics_parser import MetricsParser
-from database_manager import MetricsDatabase
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from scripts.sec_data_fetcher import SECDataFetcher  # noqa: E402
+from scripts.metrics_parser import MetricsParser  # noqa: E402
+from src.database_manager import MetricsDatabase  # noqa: E402
 
 
 class DataPipeline:

@@ -2,13 +2,52 @@
 
 > **Live deployment**: This app is deployed on Vercel. See `vercel.json` and `api/index.py` for the serverless configuration.
 
-A comprehensive database system for collecting, parsing, and analyzing **real financial metrics** from Yahoo Finance API for publicly traded companies.
+A comprehensive database system for collecting, parsing, and analyzing **real financial metrics** from the Yahoo Finance API for publicly traded companies, with an AI chatbot web interface.
 
-## Overview
+## Project Structure
 
-This system automatically fetches real financial data from Yahoo Finance, extracts comprehensive metrics, and stores them in a structured SQLite database with powerful querying capabilities.
+```
+.
+├── app.py                    # Local dev entrypoint (python3 app.py)
+├── api/
+│   └── index.py              # Vercel serverless entrypoint
+├── src/                      # Application package
+│   ├── web.py                # Flask app: chat UI + database browser
+│   ├── chatbot.py            # Natural-language chatbot
+│   ├── query_interface.py    # High-level analysis queries
+│   ├── database_manager.py   # Schema + data access layer
+│   └── db_backend.py         # Local SQLite / Turso cloud selector
+├── templates/
+│   └── index.html            # Web UI (chat + database tabs)
+├── data/
+│   ├── financial_metrics.db          # SQLite database (real data)
+│   └── financial_metrics_real.xlsx   # Excel export
+├── scripts/                  # Data pipelines & utilities
+│   ├── populate_real_data.py     # Rebuild DB from Yahoo Finance
+│   ├── yahoo_finance_fetcher.py  # Yahoo Finance data collection
+│   ├── migrate_to_cloud.py       # Sync local DB -> Turso cloud
+│   ├── demo.py                   # Interactive data demo
+│   ├── populate_sample_data.py   # (legacy) sample data generator
+│   ├── sec_data_fetcher.py       # (legacy) SEC EDGAR fetcher
+│   ├── metrics_parser.py         # (legacy) SEC filing parser
+│   ├── main_pipeline.py          # (legacy) SEC pipeline
+│   └── run_pipeline.py           # (legacy) SEC pipeline runner
+├── tests/
+│   └── test_suite.py         # Database & query tests
+├── docs/                     # Extended documentation
+│   ├── QUICKSTART.md
+│   ├── CHATBOT.md
+│   ├── REAL_DATA.md
+│   ├── USAGE.md
+│   └── SUMMARY.md
+├── .github/workflows/
+│   └── update-data.yml       # Weekly automated data refresh
+├── requirements.txt          # Runtime deps (web app / Vercel)
+├── requirements-data.txt     # Data collection & dev deps
+└── vercel.json               # Vercel deployment config
+```
 
-## ✅ **Real Data Included**
+## ✅ Real Data Included
 
 The database contains **real financial metrics from Yahoo Finance** for:
 
@@ -26,59 +65,17 @@ The database contains **real financial metrics from Yahoo Finance** for:
   - Ask questions in plain English
   - Get instant responses with charts and graphs
   - Bar charts, line charts, pie charts, and more
-  - Modern web interface with real-time updates
-- **Real Financial Data**: Fetches actual data from Yahoo Finance API
+- **🗄️ Database Browser**: Browse every table/view and run read-only SQL from the web UI
+- **Real Financial Data**: Fetched from the Yahoo Finance API
 - **Comprehensive Metrics**: 22+ financial metrics tracked over 5 years
-- **7 Companies**: AMD, CRM, GOOG, NVDA, RH, SPCX, TSLA
-- **560 Total Metrics**: Real financial data points
-- **37 Filings**: Historical data from 2021-2026
-- **Structured Database**: SQLite with normalized schema
-- **Query Interface**: Python API and SQL access
+- **Structured Database**: SQLite with normalized schema + convenience views
+- **Cloud Database Support**: Optional Turso (libSQL) backend for deployments
 - **Excel Export**: Export all data to Excel with multiple sheets
-- **Automated Updates**: Re-run script to get latest data
-## Real Data Examples
+- **Automated Updates**: Weekly GitHub Actions refresh (`.github/workflows/update-data.yml`)
 
-### Latest Revenue (as of 2025-2026)
-- **GOOG**: $402.8B (32.8% net margin)
-- **NVDA**: $215.9B (55.6% net margin)
-- **TSLA**: $94.8B (4.0% net margin)
-- **CRM**: $41.5B (18.0% net margin)
-- **AMD**: $34.6B (12.5% net margin)
-- **SPCX**: $18.7B (-26.4% net margin)
-- **RH**: $3.4B (3.6% net margin)
+## Quick Start
 
-### Key Insights from Real Data
-- NVIDIA has the highest profitability with 55.6% net margin
-- Google generates the most revenue at $402.8B
-- Space Exploration (SpaceX) shows losses but strong revenue growth
-- All companies have 3-5 years of historical data
-
-## Metrics Tracked
-
-### Revenue Metrics (2)
-  - Revenue metrics (total revenue, growth rate)
-  - Profitability metrics (gross profit, operating income, net income, EBITDA)
-  - Margin metrics (gross, operating, net margins)
-  - Balance sheet metrics (assets, liabilities, equity, cash, debt)
-  - Cash flow metrics (operating cash flow, free cash flow, capex)
-  - Per-share metrics (EPS, book value per share)
-  - Operational metrics (R&D, sales & marketing, employee count)
-  - Valuation metrics (market cap)
-- **Structured Database**: SQLite database with normalized schema
-- **Query Interface**: Easy-to-use Python API for data analysis
-- **Excel Export**: Export all data to Excel with multiple sheets
-
-## Installation
-
-```bash
-pip install -r requirements.txt
-```
-
-## Usage
-
-### Quick Start
-
-### Option 1: Interactive Chatbot (Recommended) 🆕
+### Option 1: Interactive Chatbot (Recommended)
 
 ```bash
 pip install -r requirements.txt
@@ -93,60 +90,32 @@ Open your browser to **http://localhost:5000** and chat with your financial data
 - "Show NVDA revenue trend over time"
 - "What are the latest metrics for TSLA?"
 
-The chatbot will respond with **interactive charts and graphs**!
-
-### Option 2: Populate Database with Real Data
-
-Run the complete pipeline to fetch real data from Yahoo Finance:
+### Option 2: Rebuild the Database with Fresh Data
 
 ```bash
-pip install -r requirements.txt
-python3 populate_real_data.py
+pip install -r requirements.txt -r requirements-data.txt
+python3 scripts/populate_real_data.py
 ```
 
-This will:
-1. Fetch real financial data from Yahoo Finance for all companies
-2. Parse comprehensive financial metrics
-3. Populate the SQLite database
-4. Export results to Excel
+This fetches real financial data from Yahoo Finance for all companies, populates `data/financial_metrics.db`, and exports `data/financial_metrics_real.xlsx`.
 
 ### View Results
 
 ```bash
 # Run interactive demo
-python3 demo.py
+python3 scripts/demo.py
 
-# Query the database
-python3 query_interface.py
+# Query the database from the CLI
+python3 -m src.query_interface
 
 # View in Excel
-open financial_metrics_real.xlsx
+open data/financial_metrics_real.xlsx
 ```
 
-### Individual Components
-
-#### Fetch SEC Data Only
-
-```bash
-python sec_data_fetcher.py
-```
-
-#### Parse Metrics Only
-
-```bash
-python metrics_parser.py
-```
-
-#### Create Database Schema Only
-
-```bash
-python database_manager.py
-```
-
-#### Query the Database
+## Querying from Python
 
 ```python
-from query_interface import MetricsQuery
+from src.query_interface import MetricsQuery
 
 query = MetricsQuery()
 
@@ -159,6 +128,12 @@ latest = query.get_latest_metrics('NVDA')
 # Compare revenue across companies
 revenue = query.get_revenue_comparison()
 
+# Compare a specific metric across companies
+comparison = query.compare_companies(['NVDA', 'AMD'], 'total_revenue')
+
+# Get metric trends over time
+trends = query.get_metric_trends('GOOG', 'net_income')
+
 # Generate comprehensive report
 report = query.generate_company_report('TSLA', output_file='tesla_report.txt')
 
@@ -167,88 +142,48 @@ query.close()
 
 ## Database Schema
 
-The database contains 11 tables:
+Core tables:
 
 - `companies`: Company information (ticker, CIK, name)
 - `filings`: Filing metadata (type, date, document URL)
-- `revenue_metrics`: Revenue and growth metrics
-- `profitability_metrics`: Profit-related metrics
-- `margin_metrics`: Margin percentages
-- `balance_sheet_metrics`: Balance sheet items
-- `cash_flow_metrics`: Cash flow data
-- `per_share_metrics`: Per-share calculations
-- `operational_metrics`: Operational data
-- `valuation_metrics`: Valuation data
+- `revenue_metrics`, `profitability_metrics`, `margin_metrics`,
+  `balance_sheet_metrics`, `cash_flow_metrics`, `per_share_metrics`,
+  `operational_metrics`, `valuation_metrics`
 - `all_metrics`: Flat table with all metrics for flexible querying
 
-## Output Files
+Convenience views (`v_company_overview`, `v_revenue_metrics`, `v_per_share_metrics`, ...) join company and filing info into each metric table for easier browsing.
 
-- `sec_data_raw.json`: Raw SEC filing data
-- `parsed_metrics.json`: Parsed metrics in JSON format
-- `financial_metrics.db`: SQLite database
-- `financial_metrics.xlsx`: Excel export with multiple sheets
+## Cloud Database (Turso)
 
-## Query Examples
+The app uses the local SQLite file by default. To use a Turso cloud database instead, set:
 
-### Get all available metrics
-
-```python
-query = MetricsQuery()
-metrics = query.get_all_metric_names()
-print(metrics)
+```bash
+export TURSO_DATABASE_URL="libsql://your-db-your-org.turso.io"
+export TURSO_AUTH_TOKEN="your-token"
+python3 scripts/migrate_to_cloud.py   # one-time (or repeat) sync
 ```
 
-### Compare specific metric across companies
+The weekly GitHub Actions workflow syncs to Turso automatically when the `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` repository secrets are configured.
 
-```python
-query = MetricsQuery()
-comparison = query.compare_companies(['NVDA', 'AMD'], 'total_revenue')
-print(comparison)
+## Automated Updates
+
+`.github/workflows/update-data.yml` runs every Monday at 06:00 UTC (or manually via *Run workflow*): it rebuilds the database from Yahoo Finance, syncs the cloud database, and commits the updated files in `data/`.
+
+## Testing
+
+```bash
+python3 tests/test_suite.py
 ```
 
-### Get metric trends over time
+## Documentation
 
-```python
-query = MetricsQuery()
-trends = query.get_metric_trends('GOOG', 'net_income')
-print(trends)
-```
-
-### Search for metrics
-
-```python
-query = MetricsQuery()
-results = query.search_metrics('revenue')
-print(results)
-```
-
-## Architecture
-
-```
-main_pipeline.py
-├── sec_data_fetcher.py    # Fetches filings from SEC EDGAR
-├── metrics_parser.py      # Extracts metrics from HTML/text
-└── database_manager.py    # Manages SQLite database
-
-query_interface.py         # Provides query and analysis tools
-```
-
-## Notes
-
-- The SEC API has rate limits; the system includes delays to respect these limits
-- Some metrics may not be available for all companies or all filings
-- The parser uses pattern matching and may require adjustments for specific filing formats
-- All monetary values are stored as-is from the filings (typically in millions or billions)
+See the `docs/` folder for extended guides: [QUICKSTART](docs/QUICKSTART.md), [CHATBOT](docs/CHATBOT.md), [REAL_DATA](docs/REAL_DATA.md), [USAGE](docs/USAGE.md), and [SUMMARY](docs/SUMMARY.md).
 
 ## Requirements
 
 - Python 3.8+
-- requests
-- beautifulsoup4
-- lxml
-- pandas
-- openpyxl
-- sqlite3 (included with Python)
+- Runtime: `flask`, `pandas`, `libsql` (see `requirements.txt`)
+- Data collection: `yfinance`, `openpyxl`, etc. (see `requirements-data.txt`)
 
 ## License
 

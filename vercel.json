@@ -6,13 +6,9 @@
       "use": "@vercel/python",
       "config": {
         "includeFiles": [
-          "app.py",
-          "chatbot.py",
-          "query_interface.py",
-          "database_manager.py",
-          "db_backend.py",
-          "financial_metrics.db",
-          "templates/**"
+          "src/**",
+          "templates/**",
+          "data/financial_metrics.db"
         ]
       }
     }

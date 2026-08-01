@@ -93,12 +93,12 @@ The financial metrics database has been successfully updated with **REAL data fr
 
 ### Quick Demo
 ```bash
-python3 demo.py
+python3 scripts/demo.py
 ```
 
 ### Fetch Latest Data
 ```bash
-python3 populate_real_data.py
+python3 scripts/populate_real_data.py
 ```
 
 ### Query Database
@@ -121,7 +121,7 @@ query.close()
 
 ### SQL Queries
 ```bash
-sqlite3 financial_metrics.db
+sqlite3 data/financial_metrics.db
 
 # Show all companies
 SELECT * FROM companies;
@@ -177,13 +177,13 @@ To get the latest financial data:
 
 ```bash
 # Remove old database
-rm financial_metrics.db
+rm data/financial_metrics.db
 
 # Fetch fresh data
-python3 populate_real_data.py
+python3 scripts/populate_real_data.py
 
 # Verify updates
-python3 demo.py
+python3 scripts/demo.py
 ```
 
 ## 📈 Data Trends Available

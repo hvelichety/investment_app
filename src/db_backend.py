@@ -10,8 +10,8 @@ of the codebase works unchanged.
 import os
 import sqlite3
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_DB_PATH = os.path.join(BASE_DIR, "financial_metrics.db")
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_DB_PATH = os.path.join(ROOT_DIR, "data", "financial_metrics.db")
 
 
 def is_cloud_configured() -> bool:

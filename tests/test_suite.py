@@ -2,10 +2,15 @@
 Test Script - Validates the database and pipeline components
 """
 
+import os
+import sys
 import sqlite3
 import json
-from database_manager import MetricsDatabase
-from query_interface import MetricsQuery
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.database_manager import MetricsDatabase  # noqa: E402
+from src.query_interface import MetricsQuery  # noqa: E402
 
 
 def test_database_schema():
@@ -123,7 +128,8 @@ def verify_real_database():
     print("\nVerifying real database structure...")
     
     try:
-        query = MetricsQuery("financial_metrics.db")
+        # Default path resolves to data/financial_metrics.db
+        query = MetricsQuery()
         
         companies = query.get_all_companies()
         print(f"  Companies in database: {len(companies)}")

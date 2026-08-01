@@ -3,10 +3,15 @@ Populate Database with Sample Financial Data
 Demonstrates the database structure with realistic example data
 """
 
-from database_manager import MetricsDatabase
-from query_interface import MetricsQuery
+import os
+import sys
 import random
 from datetime import datetime, timedelta
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.database_manager import MetricsDatabase  # noqa: E402
+from src.query_interface import MetricsQuery  # noqa: E402
 
 
 def generate_sample_metrics(ticker: str, year: int, base_revenue: float):
