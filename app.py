@@ -6,15 +6,13 @@ Tab 2: Raw database browser
 
 from flask import Flask, render_template, request, jsonify
 from chatbot import FinancialChatbot
-import os
+from db_backend import get_connection, backend_name, DEFAULT_DB_PATH
 import sqlite3
 import threading
 
 app = Flask(__name__)
 
-# Absolute path so the app works regardless of working directory
-# (needed for serverless platforms like Vercel)
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "financial_metrics.db")
+DB_PATH = DEFAULT_DB_PATH
 
 # Chatbot access is serialized with a lock because the underlying
 # SQLite connection is shared across Flask's request threads.
@@ -30,10 +28,9 @@ def get_chatbot():
 
 
 def get_db_connection():
-    """Create a new read-only database connection for the current request"""
-    conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Create a database connection for the current request.
+    Cloud (Turso) if configured, otherwise the local read-only file."""
+    return get_connection(readonly=True)
 
 
 @app.route('/')
@@ -102,13 +99,15 @@ def db_tables():
         cursor.execute(
             "SELECT name, type FROM sqlite_master "
             "WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%' "
+            "AND name != 'sqlite_sequence' "
             "ORDER BY type, name"
         )
+        entries = cursor.fetchall()
         tables = []
-        for row in cursor.fetchall():
-            name = row['name']
-            count = cursor.execute(f'SELECT COUNT(*) FROM "{name}"').fetchone()[0]
-            tables.append({'name': name, 'rows': count, 'kind': row['type']})
+        for name, kind in entries:
+            cursor.execute(f'SELECT COUNT(*) FROM "{name}"')
+            count = cursor.fetchone()[0]
+            tables.append({'name': name, 'rows': count, 'kind': kind})
         return jsonify({'tables': tables})
     finally:
         conn.close()
@@ -128,17 +127,18 @@ def db_table(table_name):
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'sqlite_%'"
         )
-        valid_tables = {row['name'] for row in cursor.fetchall()}
+        valid_tables = {row[0] for row in cursor.fetchall()}
         if table_name not in valid_tables:
             return jsonify({'error': f'Table {table_name} not found'}), 404
 
-        total = cursor.execute(f'SELECT COUNT(*) FROM "{table_name}"').fetchone()[0]
+        cursor.execute(f'SELECT COUNT(*) FROM "{table_name}"')
+        total = cursor.fetchone()[0]
 
         cursor.execute(f'SELECT * FROM "{table_name}" LIMIT ? OFFSET ?', (limit, offset))
         rows = cursor.fetchall()
         columns = [d[0] for d in cursor.description] if cursor.description else []
 
-        data = [[row[col] for col in columns] for row in rows]
+        data = [list(row) for row in rows]
 
         return jsonify({
             'table': table_name,
@@ -172,14 +172,14 @@ def db_query():
         cursor.execute(sql)
         rows = cursor.fetchmany(500)
         columns = [d[0] for d in cursor.description] if cursor.description else []
-        data_rows = [[row[col] for col in columns] for row in rows]
+        data_rows = [list(row) for row in rows]
         return jsonify({
             'columns': columns,
             'rows': data_rows,
             'row_count': len(data_rows),
             'truncated': len(data_rows) == 500
         })
-    except sqlite3.Error as e:
+    except Exception as e:
         return jsonify({'error': str(e)}), 400
     finally:
         conn.close()

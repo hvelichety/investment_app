@@ -22,12 +22,18 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install yfinance pandas openpyxl
+        run: pip install yfinance pandas openpyxl libsql
 
       - name: Rebuild database with fresh Yahoo Finance data
         run: |
           rm -f financial_metrics.db
           python populate_real_data.py
+
+      - name: Sync cloud database (Turso)
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: python migrate_to_cloud.py
 
       - name: Commit and push updated data
         run: |
