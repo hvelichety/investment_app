@@ -1,0 +1,14 @@
+# Additional dependencies for data collection and export scripts
+# (populate_real_data.py, yahoo_finance_fetcher.py, sec_data_fetcher.py,
+#  database_manager.py Excel export, etc.)
+# Install with: pip install -r requirements-data.txt
+-r requirements.txt
+yfinance>=0.2.40
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.3
+python-dateutil>=2.8.2
+openpyxl>=3.1.2
+plotly>=5.18.0
+matplotlib>=3.8.0
+seaborn>=0.13.0

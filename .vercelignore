@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.xlsx
+*.md
+test_suite.py
+demo.py
+main_pipeline.py
+run_pipeline.py
+populate_sample_data.py
+populate_real_data.py
+yahoo_finance_fetcher.py
+sec_data_fetcher.py
+metrics_parser.py

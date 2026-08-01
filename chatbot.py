@@ -5,16 +5,14 @@ AI-powered chatbot with natural language queries and visualizations
 
 from query_interface import MetricsQuery
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
 from typing import Dict, List, Optional, Tuple
 import re
 import json
 
 
 class FinancialChatbot:
-    def __init__(self):
-        self.query = MetricsQuery()
+    def __init__(self, db_path: str = "financial_metrics.db"):
+        self.query = MetricsQuery(db_path)
         self.companies = self.query.get_all_companies()['ticker'].tolist()
         
     def close(self):

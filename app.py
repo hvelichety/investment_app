@@ -6,12 +6,15 @@ Tab 2: Raw database browser
 
 from flask import Flask, render_template, request, jsonify
 from chatbot import FinancialChatbot
+import os
 import sqlite3
 import threading
 
 app = Flask(__name__)
 
-DB_PATH = "financial_metrics.db"
+# Absolute path so the app works regardless of working directory
+# (needed for serverless platforms like Vercel)
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "financial_metrics.db")
 
 # Chatbot access is serialized with a lock because the underlying
 # SQLite connection is shared across Flask's request threads.
@@ -22,7 +25,7 @@ chatbot_lock = threading.Lock()
 def get_chatbot():
     global chatbot
     if chatbot is None:
-        chatbot = FinancialChatbot()
+        chatbot = FinancialChatbot(DB_PATH)
     return chatbot
 
 
