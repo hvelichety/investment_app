@@ -3,68 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Metrics Explorer</title>
+    <title>Financial Metrics</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #ffffff;
+            --bg-subtle: #fafafa;
+            --bg-hover: #f4f4f5;
+            --border: #e4e4e7;
+            --border-strong: #d4d4d8;
+            --text: #18181b;
+            --text-secondary: #52525b;
+            --text-muted: #a1a1aa;
+            --accent: #18181b;
+            --accent-hover: #3f3f46;
+            --accent-soft: #f4f4f5;
+            --blue: #2563eb;
+            --radius: 10px;
+            --radius-sm: 7px;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        html, body {
+            height: 100%;
         }
 
-        .container {
-            width: 95%;
-            max-width: 1400px;
-            height: 92vh;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            -webkit-font-smoothing: antialiased;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        /* ---------- Tab bar ---------- */
-        .tab-bar {
-            display: flex;
-            background: #2d2a45;
-            padding: 0 20px;
+        ::selection {
+            background: #dbeafe;
+        }
+
+        /* ============ Top bar ============ */
+        .topbar {
+            height: 56px;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            gap: 32px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 15px;
+            letter-spacing: -0.01em;
+        }
+
+        .brand-mark {
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            height: 100%;
         }
 
         .tab-button {
-            padding: 16px 28px;
-            background: transparent;
             border: none;
-            color: #b9b5d6;
-            font-size: 15px;
-            font-weight: 600;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 0 14px;
             cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s;
+            height: 100%;
+            position: relative;
+            transition: color 0.15s;
         }
 
         .tab-button:hover {
-            color: white;
+            color: var(--text);
         }
 
         .tab-button.active {
-            color: white;
-            border-bottom-color: #667eea;
+            color: var(--text);
         }
 
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 10px;
+            right: 10px;
+            height: 2px;
+            background: var(--text);
+            border-radius: 2px;
+        }
+
+        .topbar-meta {
+            margin-left: auto;
+            color: var(--text-muted);
+            font-size: 12.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+
+        /* ============ Layout ============ */
         .tab-panel {
             display: none;
-            flex-grow: 1;
+            flex: 1;
             min-height: 0;
         }
 
@@ -72,486 +151,601 @@
             display: flex;
         }
 
-        /* ---------- Chatbot tab ---------- */
         .sidebar {
             width: 280px;
-            background: #f8f9fa;
-            border-right: 1px solid #e0e0e0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
+            flex-shrink: 0;
+            border-right: 1px solid var(--border);
+            background: var(--bg-subtle);
             overflow-y: auto;
+            padding: 20px;
         }
 
-        .sidebar h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 22px;
+        .sidebar-section {
+            margin-bottom: 28px;
         }
 
-        .companies-list {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .companies-list h3, .examples h3 {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 10px;
+        .sidebar-label {
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .company-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
         }
 
         .company-tag {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 15px;
-            margin: 3px;
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 12.5px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
         }
 
-        .examples {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            flex-grow: 1;
+        .company-tag:hover {
+            border-color: var(--border-strong);
+            color: var(--text);
         }
 
         .example-query {
-            background: #f0f0f0;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 8px 0;
-            cursor: pointer;
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
             font-size: 13px;
-            transition: all 0.2s;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.12s;
+            line-height: 1.4;
+            margin: 2px -4px;
         }
 
         .example-query:hover {
-            background: #667eea;
-            color: white;
-            transform: translateX(5px);
+            background: var(--bg-hover);
+            color: var(--text);
         }
 
-        .main-content {
-            flex-grow: 1;
+        /* ============ Chat ============ */
+        .chat-main {
+            flex: 1;
             display: flex;
             flex-direction: column;
             min-width: 0;
         }
 
-        .header {
-            background: white;
-            padding: 16px 30px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .header h1 {
-            color: #333;
-            font-size: 24px;
-            margin-bottom: 4px;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 13px;
-        }
-
-        .chat-container {
-            flex-grow: 1;
+        .chat-scroll {
+            flex: 1;
             overflow-y: auto;
-            padding: 30px;
-            background: #fafafa;
         }
 
-        .message {
-            margin-bottom: 20px;
+        .chat-inner {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 32px 24px 16px;
+        }
+
+        /* Empty state */
+        .empty-state {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 80px 20px 40px;
         }
 
-        .message.user {
-            align-items: flex-end;
+        .empty-state h1 {
+            font-size: 26px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 10px;
         }
 
-        .message-content {
-            max-width: 70%;
-            padding: 15px 20px;
-            border-radius: 15px;
+        .empty-state p {
+            color: var(--text-secondary);
+            font-size: 14.5px;
+            max-width: 440px;
             line-height: 1.6;
         }
 
+        .suggestion-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 32px;
+            width: 100%;
+            max-width: 620px;
+        }
+
+        .suggestion-card {
+            text-align: left;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+            line-height: 1.45;
+        }
+
+        .suggestion-card:hover {
+            border-color: var(--border-strong);
+            background: var(--bg-subtle);
+            color: var(--text);
+        }
+
+        .suggestion-card strong {
+            display: block;
+            color: var(--text);
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        /* Messages */
+        .message {
+            margin-bottom: 28px;
+        }
+
+        .message-role {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
         .message.user .message-content {
-            background: #667eea;
+            display: inline-block;
+            background: var(--accent);
             color: white;
-            border-bottom-right-radius: 5px;
+            padding: 10px 16px;
+            border-radius: 14px;
+            border-bottom-left-radius: 4px;
+            font-size: 14px;
+            line-height: 1.5;
         }
 
         .message.bot .message-content {
-            background: white;
-            color: #333;
-            border-bottom-left-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 14.5px;
         }
 
-        .chart-container {
-            width: 90%;
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        .message.bot .message-content strong {
+            font-weight: 600;
         }
 
-        .input-container {
-            padding: 18px 30px;
-            background: white;
-            border-top: 2px solid #f0f0f0;
+        .chart-card {
+            margin-top: 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 8px;
+            background: var(--bg);
+        }
+
+        .typing {
+            display: inline-flex;
+            gap: 5px;
+            padding: 6px 2px;
+        }
+
+        .typing span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            animation: blink 1.2s infinite ease-in-out;
+        }
+
+        .typing span:nth-child(2) { animation-delay: 0.15s; }
+        .typing span:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes blink {
+            0%, 70%, 100% { opacity: 0.25; }
+            35% { opacity: 1; }
+        }
+
+        /* Input */
+        .chat-input-wrap {
+            flex-shrink: 0;
+            border-top: 1px solid var(--border);
+            background: var(--bg);
+            padding: 14px 24px 18px;
+        }
+
+        .chat-input-row {
+            max-width: 860px;
+            margin: 0 auto;
             display: flex;
-            gap: 15px;
+            gap: 10px;
         }
 
         #user-input {
-            flex-grow: 1;
-            padding: 14px 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 25px;
-            font-size: 15px;
+            flex: 1;
+            font-family: inherit;
+            font-size: 14px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
             outline: none;
-            transition: border-color 0.3s;
+            transition: all 0.15s;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        #user-input::placeholder {
+            color: var(--text-muted);
         }
 
         #user-input:focus {
-            border-color: #667eea;
+            border-color: var(--text);
+            box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.06);
         }
 
-        #send-button {
-            padding: 14px 32px;
-            background: #667eea;
-            color: white;
+        .btn {
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 0 20px;
+            border-radius: var(--radius);
             border: none;
-            border-radius: 25px;
-            font-size: 15px;
-            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.15s;
         }
 
-        #send-button:hover {
-            background: #764ba2;
+        .btn-primary {
+            background: var(--accent);
+            color: white;
         }
 
-        #send-button:disabled {
-            background: #ccc;
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-primary:disabled {
+            background: var(--border-strong);
             cursor: not-allowed;
         }
 
-        .welcome-message {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-
-        .welcome-message h2 {
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-
-        .welcome-message p {
-            margin: 10px 0;
-        }
-
-        strong {
-            font-weight: 600;
-        }
-
-        /* ---------- Database tab ---------- */
-        .db-sidebar {
-            width: 280px;
-            background: #f8f9fa;
-            border-right: 1px solid #e0e0e0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-
-        .db-sidebar h2 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 22px;
-        }
-
+        /* ============ Database ============ */
         .table-item {
-            background: white;
-            border-radius: 8px;
-            padding: 12px 15px;
-            margin: 6px 0;
-            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: all 0.2s;
-            border: 2px solid transparent;
-            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.12s;
+            margin: 1px -4px;
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .table-item:hover {
-            border-color: #667eea;
+            background: var(--bg-hover);
+            color: var(--text);
         }
 
         .table-item.active {
-            background: #667eea;
+            background: var(--accent);
             color: white;
         }
 
         .table-item .row-count {
             font-size: 11px;
-            background: rgba(102, 126, 234, 0.15);
-            color: #667eea;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-weight: 600;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
         }
 
         .table-item.active .row-count {
-            background: rgba(255,255,255,0.25);
-            color: white;
+            color: rgba(255,255,255,0.6);
         }
 
         .db-main {
-            flex-grow: 1;
+            flex: 1;
             display: flex;
             flex-direction: column;
             min-width: 0;
         }
 
-        .db-toolbar {
-            padding: 16px 30px;
-            background: white;
-            border-bottom: 2px solid #f0f0f0;
+        .db-header {
+            flex-shrink: 0;
+            padding: 20px 28px 0;
         }
 
-        .db-toolbar h1 {
-            font-size: 22px;
-            color: #333;
-            margin-bottom: 4px;
+        .db-header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
         }
 
-        .db-toolbar p {
-            color: #666;
+        .db-header p {
+            color: var(--text-muted);
             font-size: 13px;
+            margin-top: 3px;
         }
 
         .sql-console {
-            padding: 14px 30px;
-            background: #fcfcff;
-            border-bottom: 1px solid #eee;
+            flex-shrink: 0;
             display: flex;
-            gap: 12px;
+            gap: 10px;
+            padding: 16px 28px;
         }
 
         #sql-input {
-            flex-grow: 1;
-            padding: 10px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-family: 'SF Mono', Menlo, Consolas, monospace;
-            font-size: 13px;
+            flex: 1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            padding: 10px 14px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
             outline: none;
+            transition: all 0.15s;
+            color: var(--text);
+        }
+
+        #sql-input::placeholder {
+            color: var(--text-muted);
         }
 
         #sql-input:focus {
-            border-color: #667eea;
-        }
-
-        #sql-run {
-            padding: 10px 24px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        #sql-run:hover {
-            background: #764ba2;
+            border-color: var(--text);
+            box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.06);
         }
 
         .db-table-wrap {
-            flex-grow: 1;
+            flex: 1;
             overflow: auto;
-            padding: 20px 30px;
-            background: #fafafa;
+            padding: 0 28px 20px;
         }
 
         .db-error {
-            background: #fdecea;
-            color: #b3261e;
-            border-radius: 10px;
-            padding: 14px 18px;
-            margin-bottom: 12px;
-            font-size: 14px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            margin-bottom: 14px;
+            font-size: 13px;
             display: none;
         }
 
+        .db-placeholder {
+            color: var(--text-muted);
+            padding: 60px 0;
+            text-align: center;
+            font-size: 14px;
+        }
+
         table.data-grid {
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             width: 100%;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             font-size: 13px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
         }
 
         table.data-grid th {
-            background: #667eea;
-            color: white;
-            padding: 10px 14px;
+            background: var(--bg-subtle);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 12px;
             text-align: left;
+            padding: 9px 14px;
+            border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
             white-space: nowrap;
+            font-family: 'JetBrains Mono', monospace;
         }
 
         table.data-grid td {
             padding: 8px 14px;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border);
             white-space: nowrap;
-            max-width: 320px;
+            max-width: 340px;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: var(--text-secondary);
         }
 
-        table.data-grid tr:hover td {
-            background: #f5f6ff;
+        table.data-grid tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        table.data-grid tbody tr:hover td {
+            background: var(--bg-subtle);
         }
 
         table.data-grid td.num {
             text-align: right;
             font-variant-numeric: tabular-nums;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            color: var(--text);
         }
 
-        .db-pagination {
-            padding: 14px 30px;
-            background: white;
-            border-top: 2px solid #f0f0f0;
-            display: flex;
+        table.data-grid td.null {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .db-footer {
+            flex-shrink: 0;
+            display: none;
             align-items: center;
-            gap: 15px;
+            gap: 14px;
+            padding: 12px 28px;
+            border-top: 1px solid var(--border);
         }
 
-        .db-pagination button {
-            padding: 8px 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
+        .btn-ghost {
+            background: var(--bg);
+            border: 1px solid var(--border-strong);
+            color: var(--text);
+            padding: 7px 16px;
+            font-size: 13px;
         }
 
-        .db-pagination button:disabled {
-            background: #ccc;
+        .btn-ghost:hover:not(:disabled) {
+            background: var(--bg-hover);
+        }
+
+        .btn-ghost:disabled {
+            color: var(--text-muted);
+            border-color: var(--border);
             cursor: not-allowed;
         }
 
-        .db-pagination span {
-            color: #666;
-            font-size: 14px;
+        .db-footer span {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 6px;
+            border: 2px solid var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-strong);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .suggestion-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="tab-bar">
-            <button class="tab-button active" data-tab="chat-tab">💬 Chatbot</button>
-            <button class="tab-button" data-tab="db-tab">🗄️ Raw Database</button>
+    <!-- ============ Top bar ============ -->
+    <div class="topbar">
+        <div class="brand">
+            <div class="brand-mark">F</div>
+            Financial Metrics
         </div>
+        <div class="tabs">
+            <button class="tab-button active" data-tab="chat-tab">Chat</button>
+            <button class="tab-button" data-tab="db-tab">Database</button>
+        </div>
+        <div class="topbar-meta">
+            <div class="live-dot"></div>
+            Yahoo Finance data · 7 companies
+        </div>
+    </div>
 
-        <!-- ==================== CHATBOT TAB ==================== -->
-        <div class="tab-panel active" id="chat-tab">
-            <div class="sidebar">
-                <h2>📊 Financial Data</h2>
-
-                <div class="companies-list">
-                    <h3>Companies</h3>
-                    <div id="companies-container">Loading...</div>
-                </div>
-
-                <div class="examples">
-                    <h3>💡 Example Queries</h3>
-                    <div id="examples-container">Loading...</div>
-                </div>
+    <!-- ============ Chat tab ============ -->
+    <div class="tab-panel active" id="chat-tab">
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-label">Companies</div>
+                <div class="company-tags" id="companies-container"></div>
             </div>
-
-            <div class="main-content">
-                <div class="header">
-                    <h1>💬 Financial Metrics Chatbot</h1>
-                    <p>Ask me anything about company financials. I'll show you data with interactive charts!</p>
-                </div>
-
-                <div class="chat-container" id="chat-container">
-                    <div class="welcome-message">
-                        <h2>Welcome! 👋</h2>
-                        <p>I'm your AI financial assistant with real data from Yahoo Finance.</p>
-                        <p><strong>📈 Revenue trends</strong> | <strong>💰 Profitability comparisons</strong> | <strong>📊 Latest metrics</strong> | <strong>🏢 Company details</strong></p>
-                        <p style="margin-top: 20px; color: #667eea; font-weight: 600;">Try asking me a question or click an example query!</p>
-                    </div>
-                </div>
-
-                <div class="input-container">
-                    <input type="text" id="user-input" placeholder="Ask about company financials... (e.g., 'Show NVDA revenue trend')">
-                    <button id="send-button">Send</button>
-                </div>
+            <div class="sidebar-section">
+                <div class="sidebar-label">Try asking</div>
+                <div id="examples-container"></div>
             </div>
         </div>
 
-        <!-- ==================== DATABASE TAB ==================== -->
-        <div class="tab-panel" id="db-tab">
-            <div class="db-sidebar">
-                <h2>🗄️ Tables</h2>
-                <div id="tables-container">Loading...</div>
-            </div>
-
-            <div class="db-main">
-                <div class="db-toolbar">
-                    <h1 id="db-title">Raw Database Browser</h1>
-                    <p id="db-subtitle">Select a table on the left, or run a custom SQL query below.</p>
-                </div>
-
-                <div class="sql-console">
-                    <input type="text" id="sql-input"
-                           placeholder="SELECT c.ticker, r.total_revenue FROM companies c JOIN filings f ON c.company_id = f.company_id JOIN revenue_metrics r ON f.filing_id = r.filing_id ...">
-                    <button id="sql-run">Run SQL</button>
-                </div>
-
-                <div class="db-table-wrap">
-                    <div class="db-error" id="db-error"></div>
-                    <div id="db-grid">
-                        <p style="color:#888; padding: 20px;">👈 Pick a table to view its raw contents.</p>
+        <div class="chat-main">
+            <div class="chat-scroll" id="chat-scroll">
+                <div class="chat-inner" id="chat-container">
+                    <div class="empty-state" id="empty-state">
+                        <h1>What would you like to know?</h1>
+                        <p>Ask about revenue, profitability, trends, or any metric across AMD, CRM, GOOG, NVDA, RH, SPCX, and TSLA — answers come with interactive charts.</p>
+                        <div class="suggestion-grid">
+                            <button class="suggestion-card" data-q="Show me an overview of all companies">
+                                <strong>Overview</strong>
+                                Revenue rankings across all companies
+                            </button>
+                            <button class="suggestion-card" data-q="Compare profitability across all companies">
+                                <strong>Profitability</strong>
+                                Net margins compared side by side
+                            </button>
+                            <button class="suggestion-card" data-q="Show NVDA revenue trend over time">
+                                <strong>Trends</strong>
+                                NVDA revenue growth over 5 years
+                            </button>
+                            <button class="suggestion-card" data-q="What are the latest metrics for TSLA?">
+                                <strong>Deep dive</strong>
+                                Latest financial metrics for TSLA
+                            </button>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="db-pagination" id="db-pagination" style="display:none;">
-                    <button id="prev-page">← Prev</button>
-                    <span id="page-info"></span>
-                    <button id="next-page">Next →</button>
+            <div class="chat-input-wrap">
+                <div class="chat-input-row">
+                    <input type="text" id="user-input" placeholder="Ask about company financials..." autocomplete="off">
+                    <button class="btn btn-primary" id="send-button">Send</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ============ Database tab ============ -->
+    <div class="tab-panel" id="db-tab">
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-label">Tables</div>
+                <div id="tables-container"></div>
+            </div>
+        </div>
+
+        <div class="db-main">
+            <div class="db-header">
+                <h1 id="db-title">Database</h1>
+                <p id="db-subtitle">Select a table, or run a SQL query below</p>
+            </div>
+
+            <div class="sql-console">
+                <input type="text" id="sql-input" placeholder="SELECT ticker, company_name FROM companies" autocomplete="off" spellcheck="false">
+                <button class="btn btn-primary" id="sql-run">Run</button>
+            </div>
+
+            <div class="db-table-wrap">
+                <div class="db-error" id="db-error"></div>
+                <div id="db-grid">
+                    <div class="db-placeholder">Select a table from the sidebar to view its contents</div>
+                </div>
+            </div>
+
+            <div class="db-footer" id="db-pagination">
+                <button class="btn btn-ghost" id="prev-page">Previous</button>
+                <span id="page-info"></span>
+                <button class="btn btn-ghost" id="next-page">Next</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // ==================== Tab switching ====================
+        // ============ Tabs ============
         document.querySelectorAll('.tab-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
@@ -561,95 +755,142 @@
             });
         });
 
-        // ==================== Chatbot logic ====================
-        let chatContainer = document.getElementById('chat-container');
-        let userInput = document.getElementById('user-input');
-        let sendButton = document.getElementById('send-button');
+        // ============ Chat ============
+        const chatScroll = document.getElementById('chat-scroll');
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+
+        const CHART_LAYOUT_DEFAULTS = {
+            font: { family: 'Inter, sans-serif', size: 12.5, color: '#52525b' },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            colorway: ['#18181b', '#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0891b2'],
+            margin: { t: 48, r: 24, b: 48, l: 56 },
+            xaxis: { gridcolor: '#f4f4f5', zerolinecolor: '#e4e4e7' },
+            yaxis: { gridcolor: '#f4f4f5', zerolinecolor: '#e4e4e7' },
+            title: { font: { size: 14, color: '#18181b', family: 'Inter, sans-serif' } }
+        };
 
         fetch('/companies')
             .then(r => r.json())
             .then(data => {
                 document.getElementById('companies-container').innerHTML =
-                    data.companies.map(c => `<span class="company-tag">${c}</span>`).join('');
+                    data.companies.map(c =>
+                        `<span class="company-tag" data-q="Tell me about ${c}">${c}</span>`
+                    ).join('');
+                document.querySelectorAll('.company-tag').forEach(el =>
+                    el.addEventListener('click', () => ask(el.dataset.q)));
             });
 
         fetch('/examples')
             .then(r => r.json())
             .then(data => {
                 document.getElementById('examples-container').innerHTML =
-                    data.examples.map(ex =>
-                        `<div class="example-query" onclick="askQuestion('${ex.replace(/'/g, "\\'")}')">${ex}</div>`
-                    ).join('');
+                    data.examples.map(ex => `<div class="example-query">${ex}</div>`).join('');
+                document.querySelectorAll('.example-query').forEach(el =>
+                    el.addEventListener('click', () => ask(el.textContent)));
             });
 
-        function askQuestion(question) {
-            userInput.value = question;
+        document.querySelectorAll('.suggestion-card').forEach(el =>
+            el.addEventListener('click', () => ask(el.dataset.q)));
+
+        function ask(q) {
+            userInput.value = q;
             sendMessage();
         }
 
-        function addMessage(content, isUser, chartType = null, chartConfig = null) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+        function escapeHtml(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
 
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.innerHTML = content
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        function addMessage(content, isUser, chartConfig = null) {
+            const msg = document.createElement('div');
+            msg.className = `message ${isUser ? 'user' : 'bot'}`;
+
+            const role = document.createElement('div');
+            role.className = 'message-role';
+            role.textContent = isUser ? 'You' : 'Assistant';
+            msg.appendChild(role);
+
+            const body = document.createElement('div');
+            body.className = 'message-content';
+            body.innerHTML = escapeHtml(content)
                 .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\n/g, '<br>');
-            messageDiv.appendChild(contentDiv);
-            chatContainer.appendChild(messageDiv);
+            msg.appendChild(body);
+            chatContainer.appendChild(msg);
 
-            if (chartType && chartConfig) {
-                const chartDiv = document.createElement('div');
-                chartDiv.className = 'chart-container';
-                chartDiv.id = 'chart-' + Date.now();
-                messageDiv.appendChild(chartDiv);
-                Plotly.newPlot(chartDiv, chartConfig.data, chartConfig.layout, {
-                    responsive: true,
-                    displayModeBar: true
+            if (chartConfig && chartConfig.data && chartConfig.data.length) {
+                const card = document.createElement('div');
+                card.className = 'chart-card';
+                msg.appendChild(card);
+                const layout = Object.assign({}, CHART_LAYOUT_DEFAULTS, chartConfig.layout, {
+                    font: CHART_LAYOUT_DEFAULTS.font,
+                    xaxis: Object.assign({}, CHART_LAYOUT_DEFAULTS.xaxis, chartConfig.layout.xaxis),
+                    yaxis: Object.assign({}, CHART_LAYOUT_DEFAULTS.yaxis, chartConfig.layout.yaxis),
+                    title: Object.assign({}, CHART_LAYOUT_DEFAULTS.title,
+                        typeof chartConfig.layout.title === 'string'
+                            ? { text: chartConfig.layout.title }
+                            : chartConfig.layout.title)
                 });
+                Plotly.newPlot(card, chartConfig.data, layout, { responsive: true, displaylogo: false });
             }
 
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            chatScroll.scrollTop = chatScroll.scrollHeight;
+            return msg;
+        }
+
+        function addTyping() {
+            const msg = document.createElement('div');
+            msg.className = 'message bot';
+            msg.id = 'typing-indicator';
+            msg.innerHTML = `
+                <div class="message-role">Assistant</div>
+                <div class="typing"><span></span><span></span><span></span></div>`;
+            chatContainer.appendChild(msg);
+            chatScroll.scrollTop = chatScroll.scrollHeight;
+        }
+
+        function removeTyping() {
+            const el = document.getElementById('typing-indicator');
+            if (el) el.remove();
         }
 
         async function sendMessage() {
             const message = userInput.value.trim();
-            if (!message) return;
+            if (!message || sendButton.disabled) return;
 
-            const welcome = document.querySelector('.welcome-message');
-            if (welcome) welcome.remove();
+            const empty = document.getElementById('empty-state');
+            if (empty) empty.remove();
 
             addMessage(message, true);
             userInput.value = '';
             sendButton.disabled = true;
-            sendButton.textContent = 'Thinking...';
+            addTyping();
 
             try {
                 const response = await fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ message })
                 });
                 const data = await response.json();
-                addMessage(data.response, false, data.chart_type, data.chart_config);
-            } catch (error) {
-                addMessage('Sorry, I encountered an error. Please try again.', false);
-                console.error('Error:', error);
+                removeTyping();
+                addMessage(data.response, false, data.chart_config);
+            } catch (err) {
+                removeTyping();
+                addMessage('Something went wrong. Please try again.', false);
             }
 
             sendButton.disabled = false;
-            sendButton.textContent = 'Send';
             userInput.focus();
         }
 
         sendButton.addEventListener('click', sendMessage);
-        userInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
+        userInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
 
-        // ==================== Database browser logic ====================
+        // ============ Database ============
         const PAGE_SIZE = 50;
         let currentTable = null;
         let currentOffset = 0;
@@ -679,9 +920,8 @@
                     container.innerHTML = data.tables.map(t =>
                         `<div class="table-item" data-table="${t.name}">
                             <span>${t.name}</span>
-                            <span class="row-count">${t.rows}</span>
-                        </div>`
-                    ).join('');
+                            <span class="row-count">${t.rows.toLocaleString()}</span>
+                        </div>`).join('');
 
                     container.querySelectorAll('.table-item').forEach(item => {
                         item.addEventListener('click', () => {
@@ -697,7 +937,7 @@
 
         function formatCell(value) {
             if (value === null || value === undefined) {
-                return '<td style="color:#bbb;">NULL</td>';
+                return '<td class="null">null</td>';
             }
             if (typeof value === 'number') {
                 const formatted = Number.isInteger(value)
@@ -705,18 +945,17 @@
                     : value.toLocaleString(undefined, { maximumFractionDigits: 4 });
                 return `<td class="num">${formatted}</td>`;
             }
-            const escaped = String(value)
-                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const escaped = escapeHtml(String(value));
             return `<td title="${escaped}">${escaped}</td>`;
         }
 
         function renderGrid(columns, rows) {
-            if (!columns.length) {
-                dbGrid.innerHTML = '<p style="color:#888; padding: 20px;">No results.</p>';
+            if (!columns.length || !rows.length) {
+                dbGrid.innerHTML = '<div class="db-placeholder">No results</div>';
                 return;
             }
             let html = '<table class="data-grid"><thead><tr>';
-            html += columns.map(c => `<th>${c}</th>`).join('');
+            html += columns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
             html += '</tr></thead><tbody>';
             for (const row of rows) {
                 html += '<tr>' + row.map(formatCell).join('') + '</tr>';
@@ -733,9 +972,9 @@
                     if (data.error) { showDbError(data.error); return; }
 
                     currentTotal = data.total;
-                    document.getElementById('db-title').textContent = `Table: ${data.table}`;
+                    document.getElementById('db-title').textContent = data.table;
                     document.getElementById('db-subtitle').textContent =
-                        `${data.total} rows total • showing ${data.offset + 1}–${Math.min(data.offset + data.rows.length, data.total)}`;
+                        `${data.total.toLocaleString()} rows · showing ${data.offset + 1}–${Math.min(data.offset + data.rows.length, data.total)}`;
 
                     renderGrid(data.columns, data.rows);
 
@@ -759,7 +998,6 @@
             loadTableData();
         });
 
-        // SQL console
         const sqlInput = document.getElementById('sql-input');
         const sqlRun = document.getElementById('sql-run');
 
@@ -771,15 +1009,15 @@
             fetch('/db/query', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sql: sql })
+                body: JSON.stringify({ sql })
             })
                 .then(r => r.json())
                 .then(data => {
                     if (data.error) { showDbError(data.error); return; }
 
-                    document.getElementById('db-title').textContent = 'Custom SQL Query';
+                    document.getElementById('db-title').textContent = 'Query results';
                     document.getElementById('db-subtitle').textContent =
-                        `${data.row_count} rows returned` + (data.truncated ? ' (truncated to 500)' : '');
+                        `${data.row_count.toLocaleString()} rows` + (data.truncated ? ' (truncated to 500)' : '');
 
                     dbPagination.style.display = 'none';
                     document.querySelectorAll('#tables-container .table-item')
@@ -791,9 +1029,7 @@
         }
 
         sqlRun.addEventListener('click', runSql);
-        sqlInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') runSql();
-        });
+        sqlInput.addEventListener('keypress', e => { if (e.key === 'Enter') runSql(); });
 
         loadTables();
         userInput.focus();
