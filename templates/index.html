@@ -715,7 +715,11 @@
     <div class="tab-panel" id="db-tab">
         <div class="sidebar">
             <div class="sidebar-section">
-                <div class="sidebar-label">Tables</div>
+                <div class="sidebar-label">Views · with company info</div>
+                <div id="views-container"></div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-label">Raw tables</div>
                 <div id="tables-container"></div>
             </div>
         </div>
@@ -935,16 +939,21 @@
             fetch('/db/tables')
                 .then(r => r.json())
                 .then(data => {
-                    const container = document.getElementById('tables-container');
-                    container.innerHTML = data.tables.map(t =>
+                    const render = t =>
                         `<div class="table-item" data-table="${t.name}">
                             <span>${t.name}</span>
                             <span class="row-count">${t.rows.toLocaleString()}</span>
-                        </div>`).join('');
+                        </div>`;
 
-                    container.querySelectorAll('.table-item').forEach(item => {
+                    const views = data.tables.filter(t => t.kind === 'view');
+                    const tables = data.tables.filter(t => t.kind !== 'view');
+
+                    document.getElementById('views-container').innerHTML = views.map(render).join('');
+                    document.getElementById('tables-container').innerHTML = tables.map(render).join('');
+
+                    document.querySelectorAll('#db-tab .table-item').forEach(item => {
                         item.addEventListener('click', () => {
-                            container.querySelectorAll('.table-item').forEach(i => i.classList.remove('active'));
+                            document.querySelectorAll('#db-tab .table-item').forEach(i => i.classList.remove('active'));
                             item.classList.add('active');
                             currentTable = item.dataset.table;
                             currentOffset = 0;
@@ -1039,7 +1048,7 @@
                         `${data.row_count.toLocaleString()} rows` + (data.truncated ? ' (truncated to 500)' : '');
 
                     dbPagination.style.display = 'none';
-                    document.querySelectorAll('#tables-container .table-item')
+                    document.querySelectorAll('#db-tab .table-item')
                         .forEach(i => i.classList.remove('active'));
 
                     renderGrid(data.columns, data.rows);
