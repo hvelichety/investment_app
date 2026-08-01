@@ -7,3 +7,7 @@ sec-edgar-downloader>=5.0.0
 python-dateutil>=2.8.2
 openpyxl>=3.1.2
 yfinance>=0.2.40
+flask>=3.0.0
+plotly>=5.18.0
+matplotlib>=3.8.0
+seaborn>=0.13.0

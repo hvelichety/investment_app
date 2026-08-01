@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Metrics Chatbot</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1400px;
+            height: 90vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .companies-list {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .companies-list h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .company-tag {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            margin: 3px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .examples {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .examples h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .example-query {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 8px 0;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .example-query:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .chat-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 15px;
+            line-height: 1.6;
+        }
+
+        .message.user .message-content {
+            background: #667eea;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .input-container {
+            padding: 20px 30px;
+            background: white;
+            border-top: 2px solid #f0f0f0;
+            display: flex;
+            gap: 15px;
+        }
+
+        #user-input {
+            flex-grow: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #user-input:focus {
+            border-color: #667eea;
+        }
+
+        #send-button {
+            padding: 15px 35px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #send-button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        #send-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .welcome-message h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .welcome-message p {
+            margin: 10px 0;
+        }
+
+        strong {
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* Markdown-like styling for bot responses */
+        .message-content h3 {
+            margin: 15px 0 10px 0;
+            color: #667eea;
+        }
+
+        .message-content ul {
+            margin-left: 20px;
+        }
+
+        .message-content li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>📊 Financial Data</h2>
+            
+            <div class="companies-list">
+                <h3>Companies</h3>
+                <div id="companies-container">
+                    <div class="loading"></div>
+                </div>
+            </div>
+
+            <div class="examples">
+                <h3>💡 Example Queries</h3>
+                <div id="examples-container">
+                    <div class="loading"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="header">
+                <h1>💬 Financial Metrics Chatbot</h1>
+                <p>Ask me anything about company financials. I'll show you data with interactive charts!</p>
+            </div>
+
+            <div class="chat-container" id="chat-container">
+                <div class="welcome-message">
+                    <h2>Welcome! 👋</h2>
+                    <p>I'm your AI financial assistant with real data from Yahoo Finance.</p>
+                    <p>I can show you:</p>
+                    <p><strong>📈 Revenue trends</strong> | <strong>💰 Profitability comparisons</strong> | <strong>📊 Latest metrics</strong> | <strong>🏢 Company details</strong></p>
+                    <p style="margin-top: 20px; color: #667eea; font-weight: 600;">Try asking me a question or click an example query!</p>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <input type="text" id="user-input" placeholder="Ask about company financials... (e.g., 'Show NVDA revenue trend')">
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chatContainer = document.getElementById('chat-container');
+        let userInput = document.getElementById('user-input');
+        let sendButton = document.getElementById('send-button');
+
+        // Load companies
+        fetch('/companies')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('companies-container');
+                container.innerHTML = data.companies.map(c => `<span class="company-tag">${c}</span>`).join('');
+            });
+
+        // Load examples
+        fetch('/examples')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('examples-container');
+                container.innerHTML = data.examples.map(ex => 
+                    `<div class="example-query" onclick="askQuestion('${ex}')">${ex}</div>`
+                ).join('');
+            });
+
+        function askQuestion(question) {
+            userInput.value = question;
+            sendMessage();
+        }
+
+        function addMessage(content, isUser, chartType = null, chartConfig = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            // Convert markdown-like formatting
+            let formattedContent = content
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+            
+            contentDiv.innerHTML = formattedContent;
+            messageDiv.appendChild(contentDiv);
+            
+            chatContainer.appendChild(messageDiv);
+            
+            // Add chart if provided
+            if (chartType && chartConfig) {
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'chart-container';
+                chartContainer.id = 'chart-' + Date.now();
+                messageDiv.appendChild(chartContainer);
+                
+                Plotly.newPlot(chartContainer, chartConfig.data, chartConfig.layout, {
+                    responsive: true,
+                    displayModeBar: true
+                });
+            }
+            
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Clear welcome message if exists
+            const welcome = document.querySelector('.welcome-message');
+            if (welcome) welcome.remove();
+
+            // Add user message
+            addMessage(message, true);
+            userInput.value = '';
+            
+            // Disable input while processing
+            sendButton.disabled = true;
+            sendButton.textContent = 'Thinking...';
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                
+                // Add bot response
+                addMessage(data.response, false, data.chart_type, data.chart_config);
+                
+            } catch (error) {
+                addMessage('Sorry, I encountered an error. Please try again.', false);
+                console.error('Error:', error);
+            }
+
+            sendButton.disabled = false;
+            sendButton.textContent = 'Send';
+            userInput.focus();
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Focus input on load
+        userInput.focus();
+    </script>
+</body>
+</html>
