@@ -18,7 +18,9 @@ class MetricsDatabase:
     
     def connect(self):
         """Connect to the database"""
-        self.conn = sqlite3.connect(self.db_path)
+        # check_same_thread=False allows use from Flask request threads;
+        # access is serialized with a lock in app.py.
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.cursor = self.conn.cursor()
     
     def close(self):

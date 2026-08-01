@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financial Metrics Chatbot</title>
+    <title>Financial Metrics Explorer</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
         * {
@@ -24,27 +24,69 @@
         .container {
             width: 95%;
             max-width: 1400px;
-            height: 90vh;
+            height: 92vh;
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
 
+        /* ---------- Tab bar ---------- */
+        .tab-bar {
+            display: flex;
+            background: #2d2a45;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+
+        .tab-button {
+            padding: 16px 28px;
+            background: transparent;
+            border: none;
+            color: #b9b5d6;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-button:hover {
+            color: white;
+        }
+
+        .tab-button.active {
+            color: white;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-panel {
+            display: none;
+            flex-grow: 1;
+            min-height: 0;
+        }
+
+        .tab-panel.active {
+            display: flex;
+        }
+
+        /* ---------- Chatbot tab ---------- */
         .sidebar {
-            width: 300px;
+            width: 280px;
             background: #f8f9fa;
             border-right: 1px solid #e0e0e0;
             padding: 20px;
             display: flex;
             flex-direction: column;
+            overflow-y: auto;
         }
 
         .sidebar h2 {
             color: #667eea;
             margin-bottom: 20px;
-            font-size: 24px;
+            font-size: 22px;
         }
 
         .companies-list {
@@ -54,10 +96,12 @@
             margin-bottom: 20px;
         }
 
-        .companies-list h3 {
-            font-size: 14px;
+        .companies-list h3, .examples h3 {
+            font-size: 13px;
             color: #666;
             margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .company-tag {
@@ -76,13 +120,6 @@
             border-radius: 10px;
             padding: 15px;
             flex-grow: 1;
-            overflow-y: auto;
-        }
-
-        .examples h3 {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
         }
 
         .example-query {
@@ -105,23 +142,24 @@
             flex-grow: 1;
             display: flex;
             flex-direction: column;
+            min-width: 0;
         }
 
         .header {
             background: white;
-            padding: 20px 30px;
+            padding: 16px 30px;
             border-bottom: 2px solid #f0f0f0;
         }
 
         .header h1 {
             color: #333;
-            font-size: 28px;
-            margin-bottom: 5px;
+            font-size: 24px;
+            margin-bottom: 4px;
         }
 
         .header p {
             color: #666;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .chat-container {
@@ -134,11 +172,12 @@
         .message {
             margin-bottom: 20px;
             display: flex;
+            flex-direction: column;
             align-items: flex-start;
         }
 
         .message.user {
-            justify-content: flex-end;
+            align-items: flex-end;
         }
 
         .message-content {
@@ -162,6 +201,7 @@
         }
 
         .chart-container {
+            width: 90%;
             background: white;
             border-radius: 15px;
             padding: 20px;
@@ -170,7 +210,7 @@
         }
 
         .input-container {
-            padding: 20px 30px;
+            padding: 18px 30px;
             background: white;
             border-top: 2px solid #f0f0f0;
             display: flex;
@@ -179,7 +219,7 @@
 
         #user-input {
             flex-grow: 1;
-            padding: 15px 20px;
+            padding: 14px 20px;
             border: 2px solid #e0e0e0;
             border-radius: 25px;
             font-size: 15px;
@@ -192,7 +232,7 @@
         }
 
         #send-button {
-            padding: 15px 35px;
+            padding: 14px 32px;
             background: #667eea;
             color: white;
             border: none;
@@ -205,28 +245,11 @@
 
         #send-button:hover {
             background: #764ba2;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
         #send-button:disabled {
             background: #ccc;
             cursor: not-allowed;
-            transform: none;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #667eea;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
         }
 
         .welcome-message {
@@ -246,88 +269,317 @@
 
         strong {
             font-weight: 600;
-            color: #333;
         }
 
-        /* Markdown-like styling for bot responses */
-        .message-content h3 {
-            margin: 15px 0 10px 0;
+        /* ---------- Database tab ---------- */
+        .db-sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .db-sidebar h2 {
             color: #667eea;
+            margin-bottom: 15px;
+            font-size: 22px;
         }
 
-        .message-content ul {
-            margin-left: 20px;
+        .table-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin: 6px 0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            font-size: 14px;
         }
 
-        .message-content li {
-            margin: 5px 0;
+        .table-item:hover {
+            border-color: #667eea;
+        }
+
+        .table-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .table-item .row-count {
+            font-size: 11px;
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .table-item.active .row-count {
+            background: rgba(255,255,255,0.25);
+            color: white;
+        }
+
+        .db-main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .db-toolbar {
+            padding: 16px 30px;
+            background: white;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .db-toolbar h1 {
+            font-size: 22px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .db-toolbar p {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .sql-console {
+            padding: 14px 30px;
+            background: #fcfcff;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 12px;
+        }
+
+        #sql-input {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-family: 'SF Mono', Menlo, Consolas, monospace;
+            font-size: 13px;
+            outline: none;
+        }
+
+        #sql-input:focus {
+            border-color: #667eea;
+        }
+
+        #sql-run {
+            padding: 10px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #sql-run:hover {
+            background: #764ba2;
+        }
+
+        .db-table-wrap {
+            flex-grow: 1;
+            overflow: auto;
+            padding: 20px 30px;
+            background: #fafafa;
+        }
+
+        .db-error {
+            background: #fdecea;
+            color: #b3261e;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            display: none;
+        }
+
+        table.data-grid {
+            border-collapse: collapse;
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            font-size: 13px;
+        }
+
+        table.data-grid th {
+            background: #667eea;
+            color: white;
+            padding: 10px 14px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+        }
+
+        table.data-grid td {
+            padding: 8px 14px;
+            border-bottom: 1px solid #f0f0f0;
+            white-space: nowrap;
+            max-width: 320px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        table.data-grid tr:hover td {
+            background: #f5f6ff;
+        }
+
+        table.data-grid td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .db-pagination {
+            padding: 14px 30px;
+            background: white;
+            border-top: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .db-pagination button {
+            padding: 8px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .db-pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .db-pagination span {
+            color: #666;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="sidebar">
-            <h2>📊 Financial Data</h2>
-            
-            <div class="companies-list">
-                <h3>Companies</h3>
-                <div id="companies-container">
-                    <div class="loading"></div>
+        <div class="tab-bar">
+            <button class="tab-button active" data-tab="chat-tab">💬 Chatbot</button>
+            <button class="tab-button" data-tab="db-tab">🗄️ Raw Database</button>
+        </div>
+
+        <!-- ==================== CHATBOT TAB ==================== -->
+        <div class="tab-panel active" id="chat-tab">
+            <div class="sidebar">
+                <h2>📊 Financial Data</h2>
+
+                <div class="companies-list">
+                    <h3>Companies</h3>
+                    <div id="companies-container">Loading...</div>
+                </div>
+
+                <div class="examples">
+                    <h3>💡 Example Queries</h3>
+                    <div id="examples-container">Loading...</div>
                 </div>
             </div>
 
-            <div class="examples">
-                <h3>💡 Example Queries</h3>
-                <div id="examples-container">
-                    <div class="loading"></div>
+            <div class="main-content">
+                <div class="header">
+                    <h1>💬 Financial Metrics Chatbot</h1>
+                    <p>Ask me anything about company financials. I'll show you data with interactive charts!</p>
+                </div>
+
+                <div class="chat-container" id="chat-container">
+                    <div class="welcome-message">
+                        <h2>Welcome! 👋</h2>
+                        <p>I'm your AI financial assistant with real data from Yahoo Finance.</p>
+                        <p><strong>📈 Revenue trends</strong> | <strong>💰 Profitability comparisons</strong> | <strong>📊 Latest metrics</strong> | <strong>🏢 Company details</strong></p>
+                        <p style="margin-top: 20px; color: #667eea; font-weight: 600;">Try asking me a question or click an example query!</p>
+                    </div>
+                </div>
+
+                <div class="input-container">
+                    <input type="text" id="user-input" placeholder="Ask about company financials... (e.g., 'Show NVDA revenue trend')">
+                    <button id="send-button">Send</button>
                 </div>
             </div>
         </div>
 
-        <div class="main-content">
-            <div class="header">
-                <h1>💬 Financial Metrics Chatbot</h1>
-                <p>Ask me anything about company financials. I'll show you data with interactive charts!</p>
+        <!-- ==================== DATABASE TAB ==================== -->
+        <div class="tab-panel" id="db-tab">
+            <div class="db-sidebar">
+                <h2>🗄️ Tables</h2>
+                <div id="tables-container">Loading...</div>
             </div>
 
-            <div class="chat-container" id="chat-container">
-                <div class="welcome-message">
-                    <h2>Welcome! 👋</h2>
-                    <p>I'm your AI financial assistant with real data from Yahoo Finance.</p>
-                    <p>I can show you:</p>
-                    <p><strong>📈 Revenue trends</strong> | <strong>💰 Profitability comparisons</strong> | <strong>📊 Latest metrics</strong> | <strong>🏢 Company details</strong></p>
-                    <p style="margin-top: 20px; color: #667eea; font-weight: 600;">Try asking me a question or click an example query!</p>
+            <div class="db-main">
+                <div class="db-toolbar">
+                    <h1 id="db-title">Raw Database Browser</h1>
+                    <p id="db-subtitle">Select a table on the left, or run a custom SQL query below.</p>
                 </div>
-            </div>
 
-            <div class="input-container">
-                <input type="text" id="user-input" placeholder="Ask about company financials... (e.g., 'Show NVDA revenue trend')">
-                <button id="send-button">Send</button>
+                <div class="sql-console">
+                    <input type="text" id="sql-input"
+                           placeholder="SELECT c.ticker, r.total_revenue FROM companies c JOIN filings f ON c.company_id = f.company_id JOIN revenue_metrics r ON f.filing_id = r.filing_id ...">
+                    <button id="sql-run">Run SQL</button>
+                </div>
+
+                <div class="db-table-wrap">
+                    <div class="db-error" id="db-error"></div>
+                    <div id="db-grid">
+                        <p style="color:#888; padding: 20px;">👈 Pick a table to view its raw contents.</p>
+                    </div>
+                </div>
+
+                <div class="db-pagination" id="db-pagination" style="display:none;">
+                    <button id="prev-page">← Prev</button>
+                    <span id="page-info"></span>
+                    <button id="next-page">Next →</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // ==================== Tab switching ====================
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ==================== Chatbot logic ====================
         let chatContainer = document.getElementById('chat-container');
         let userInput = document.getElementById('user-input');
         let sendButton = document.getElementById('send-button');
 
-        // Load companies
         fetch('/companies')
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
-                const container = document.getElementById('companies-container');
-                container.innerHTML = data.companies.map(c => `<span class="company-tag">${c}</span>`).join('');
+                document.getElementById('companies-container').innerHTML =
+                    data.companies.map(c => `<span class="company-tag">${c}</span>`).join('');
             });
 
-        // Load examples
         fetch('/examples')
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
-                const container = document.getElementById('examples-container');
-                container.innerHTML = data.examples.map(ex => 
-                    `<div class="example-query" onclick="askQuestion('${ex}')">${ex}</div>`
-                ).join('');
+                document.getElementById('examples-container').innerHTML =
+                    data.examples.map(ex =>
+                        `<div class="example-query" onclick="askQuestion('${ex.replace(/'/g, "\\'")}')">${ex}</div>`
+                    ).join('');
             });
 
         function askQuestion(question) {
@@ -338,33 +590,27 @@
         function addMessage(content, isUser, chartType = null, chartConfig = null) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-            
+
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            
-            // Convert markdown-like formatting
-            let formattedContent = content
+            contentDiv.innerHTML = content
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\n/g, '<br>');
-            
-            contentDiv.innerHTML = formattedContent;
             messageDiv.appendChild(contentDiv);
-            
             chatContainer.appendChild(messageDiv);
-            
-            // Add chart if provided
+
             if (chartType && chartConfig) {
-                const chartContainer = document.createElement('div');
-                chartContainer.className = 'chart-container';
-                chartContainer.id = 'chart-' + Date.now();
-                messageDiv.appendChild(chartContainer);
-                
-                Plotly.newPlot(chartContainer, chartConfig.data, chartConfig.layout, {
+                const chartDiv = document.createElement('div');
+                chartDiv.className = 'chart-container';
+                chartDiv.id = 'chart-' + Date.now();
+                messageDiv.appendChild(chartDiv);
+                Plotly.newPlot(chartDiv, chartConfig.data, chartConfig.layout, {
                     responsive: true,
                     displayModeBar: true
                 });
             }
-            
+
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
@@ -372,32 +618,22 @@
             const message = userInput.value.trim();
             if (!message) return;
 
-            // Clear welcome message if exists
             const welcome = document.querySelector('.welcome-message');
             if (welcome) welcome.remove();
 
-            // Add user message
             addMessage(message, true);
             userInput.value = '';
-            
-            // Disable input while processing
             sendButton.disabled = true;
             sendButton.textContent = 'Thinking...';
 
             try {
                 const response = await fetch('/chat', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ message: message })
                 });
-
                 const data = await response.json();
-                
-                // Add bot response
                 addMessage(data.response, false, data.chart_type, data.chart_config);
-                
             } catch (error) {
                 addMessage('Sorry, I encountered an error. Please try again.', false);
                 console.error('Error:', error);
@@ -408,13 +644,158 @@
             userInput.focus();
         }
 
-        // Event listeners
         sendButton.addEventListener('click', sendMessage);
         userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
 
-        // Focus input on load
+        // ==================== Database browser logic ====================
+        const PAGE_SIZE = 50;
+        let currentTable = null;
+        let currentOffset = 0;
+        let currentTotal = 0;
+
+        const dbError = document.getElementById('db-error');
+        const dbGrid = document.getElementById('db-grid');
+        const dbPagination = document.getElementById('db-pagination');
+        const pageInfo = document.getElementById('page-info');
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+
+        function showDbError(msg) {
+            dbError.textContent = msg;
+            dbError.style.display = 'block';
+        }
+
+        function clearDbError() {
+            dbError.style.display = 'none';
+        }
+
+        function loadTables() {
+            fetch('/db/tables')
+                .then(r => r.json())
+                .then(data => {
+                    const container = document.getElementById('tables-container');
+                    container.innerHTML = data.tables.map(t =>
+                        `<div class="table-item" data-table="${t.name}">
+                            <span>${t.name}</span>
+                            <span class="row-count">${t.rows}</span>
+                        </div>`
+                    ).join('');
+
+                    container.querySelectorAll('.table-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            container.querySelectorAll('.table-item').forEach(i => i.classList.remove('active'));
+                            item.classList.add('active');
+                            currentTable = item.dataset.table;
+                            currentOffset = 0;
+                            loadTableData();
+                        });
+                    });
+                });
+        }
+
+        function formatCell(value) {
+            if (value === null || value === undefined) {
+                return '<td style="color:#bbb;">NULL</td>';
+            }
+            if (typeof value === 'number') {
+                const formatted = Number.isInteger(value)
+                    ? value.toLocaleString()
+                    : value.toLocaleString(undefined, { maximumFractionDigits: 4 });
+                return `<td class="num">${formatted}</td>`;
+            }
+            const escaped = String(value)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return `<td title="${escaped}">${escaped}</td>`;
+        }
+
+        function renderGrid(columns, rows) {
+            if (!columns.length) {
+                dbGrid.innerHTML = '<p style="color:#888; padding: 20px;">No results.</p>';
+                return;
+            }
+            let html = '<table class="data-grid"><thead><tr>';
+            html += columns.map(c => `<th>${c}</th>`).join('');
+            html += '</tr></thead><tbody>';
+            for (const row of rows) {
+                html += '<tr>' + row.map(formatCell).join('') + '</tr>';
+            }
+            html += '</tbody></table>';
+            dbGrid.innerHTML = html;
+        }
+
+        function loadTableData() {
+            clearDbError();
+            fetch(`/db/table/${currentTable}?limit=${PAGE_SIZE}&offset=${currentOffset}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) { showDbError(data.error); return; }
+
+                    currentTotal = data.total;
+                    document.getElementById('db-title').textContent = `Table: ${data.table}`;
+                    document.getElementById('db-subtitle').textContent =
+                        `${data.total} rows total • showing ${data.offset + 1}–${Math.min(data.offset + data.rows.length, data.total)}`;
+
+                    renderGrid(data.columns, data.rows);
+
+                    dbPagination.style.display = 'flex';
+                    const page = Math.floor(currentOffset / PAGE_SIZE) + 1;
+                    const totalPages = Math.max(1, Math.ceil(currentTotal / PAGE_SIZE));
+                    pageInfo.textContent = `Page ${page} of ${totalPages}`;
+                    prevBtn.disabled = currentOffset === 0;
+                    nextBtn.disabled = currentOffset + PAGE_SIZE >= currentTotal;
+                })
+                .catch(err => showDbError('Failed to load table: ' + err));
+        }
+
+        prevBtn.addEventListener('click', () => {
+            currentOffset = Math.max(0, currentOffset - PAGE_SIZE);
+            loadTableData();
+        });
+
+        nextBtn.addEventListener('click', () => {
+            currentOffset += PAGE_SIZE;
+            loadTableData();
+        });
+
+        // SQL console
+        const sqlInput = document.getElementById('sql-input');
+        const sqlRun = document.getElementById('sql-run');
+
+        function runSql() {
+            const sql = sqlInput.value.trim();
+            if (!sql) return;
+            clearDbError();
+
+            fetch('/db/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sql: sql })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) { showDbError(data.error); return; }
+
+                    document.getElementById('db-title').textContent = 'Custom SQL Query';
+                    document.getElementById('db-subtitle').textContent =
+                        `${data.row_count} rows returned` + (data.truncated ? ' (truncated to 500)' : '');
+
+                    dbPagination.style.display = 'none';
+                    document.querySelectorAll('#tables-container .table-item')
+                        .forEach(i => i.classList.remove('active'));
+
+                    renderGrid(data.columns, data.rows);
+                })
+                .catch(err => showDbError('Query failed: ' + err));
+        }
+
+        sqlRun.addEventListener('click', runSql);
+        sqlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') runSql();
+        });
+
+        loadTables();
         userInput.focus();
     </script>
 </body>
