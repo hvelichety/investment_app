@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.vercel/
+pipeline_progress.json
+data_*.json
+metrics_*.json
+sec_data_raw.json
+parsed_metrics.json
