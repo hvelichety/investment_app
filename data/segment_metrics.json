@@ -1,0 +1,42 @@
+{
+  "description": "Manual / estimated operating-segment revenue overlays. Applied after Yahoo Finance populate because segment detail is not available from that API.",
+  "companies": {
+    "SPCX": {
+      "company_name": "Space Exploration Technologies Corp.",
+      "years": {
+        "2025": {
+          "filing_date": "2025-12-31",
+          "total_revenue": 18700000000,
+          "currency": "USD",
+          "source": "estimated 2025 full-year segment mix",
+          "segments": [
+            {
+              "segment_key": "connectivity",
+              "segment_name": "Connectivity (Starlink)",
+              "revenue": 11400000000,
+              "revenue_share_pct": 61.0,
+              "profitability_status": "profitable",
+              "notes": "Starlink consumer, business, maritime, aviation, and government (Starshield). Primary cash-flow engine with recurring subscription revenue."
+            },
+            {
+              "segment_key": "space",
+              "segment_name": "Space (Launch Services)",
+              "revenue": 4100000000,
+              "revenue_share_pct": 22.0,
+              "profitability_status": "near_breakeven",
+              "notes": "Commercial, NASA, and DoD launches (Falcon 9, Falcon Heavy, Starship). Many Falcon 9 flights are internal Starlink deployments, so external launch revenue is lower than total launch activity."
+            },
+            {
+              "segment_key": "ai_other",
+              "segment_name": "AI / Other",
+              "revenue": 3200000000,
+              "revenue_share_pct": 17.0,
+              "profitability_status": "loss_making",
+              "notes": "AI products, compute, and related activities (xAI-related, Grok, X, compute infrastructure). Heavily loss-making due to compute and development spend."
+            }
+          ]
+        }
+      }
+    }
+  }
+}

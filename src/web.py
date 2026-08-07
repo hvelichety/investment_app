@@ -107,7 +107,9 @@ def get_examples():
         "Show me GOOG's financial performance",
         "Compare revenue of all companies",
         "What's AMD's net margin?",
-        "Show CRM historical data"
+        "Show CRM historical data",
+        "Show SPCX revenue by segment",
+        "Break down SpaceX revenue into Starlink, launches, and AI",
     ]
     return jsonify({'examples': examples})
 

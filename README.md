@@ -21,9 +21,11 @@ A comprehensive database system for collecting, parsing, and analyzing **real fi
 │   └── index.html            # Web UI (chat + database tabs)
 ├── data/
 │   ├── financial_metrics.db          # SQLite database (real data)
-│   └── financial_metrics_real.xlsx   # Excel export
+│   ├── financial_metrics_real.xlsx   # Excel export
+│   └── segment_metrics.json          # Operating-segment overlays (SPCX, etc.)
 ├── scripts/                  # Data pipelines & utilities
 │   ├── populate_real_data.py     # Rebuild DB from Yahoo Finance
+│   ├── load_segment_data.py      # Load segment revenue overlays
 │   ├── yahoo_finance_fetcher.py  # Yahoo Finance data collection
 │   ├── migrate_to_cloud.py       # Sync local DB -> Turso cloud
 │   ├── demo.py                   # Interactive data demo
@@ -67,6 +69,7 @@ The database contains **real financial metrics from Yahoo Finance** for:
   - Bar charts, line charts, pie charts, and more
 - **🗄️ Database Browser**: Browse every table/view and run read-only SQL from the web UI
 - **Real Financial Data**: Fetched from the Yahoo Finance API
+- **Segment Revenue**: Operating-segment breakdowns (e.g. SPCX Connectivity / Space / AI) from `data/segment_metrics.json`
 - **Comprehensive Metrics**: 22+ financial metrics tracked over 5 years
 - **Structured Database**: SQLite with normalized schema + convenience views
 - **Cloud Database Support**: Optional Turso (libSQL) backend for deployments
@@ -88,6 +91,7 @@ Open your browser to **http://localhost:5000** and chat with your financial data
 - "Show me an overview of all companies"
 - "Compare profitability across companies"
 - "Show NVDA revenue trend over time"
+- "Show SPCX revenue by segment"
 - "What are the latest metrics for TSLA?"
 
 ### Option 2: Rebuild the Database with Fresh Data
@@ -149,9 +153,12 @@ Core tables:
 - `revenue_metrics`, `profitability_metrics`, `margin_metrics`,
   `balance_sheet_metrics`, `cash_flow_metrics`, `per_share_metrics`,
   `operational_metrics`, `valuation_metrics`
+- `segment_metrics`: Operating-segment revenue (loaded from `data/segment_metrics.json`)
 - `all_metrics`: Flat table with all metrics for flexible querying
 
-Convenience views (`v_company_overview`, `v_revenue_metrics`, `v_per_share_metrics`, ...) join company and filing info into each metric table for easier browsing.
+Convenience views (`v_company_overview`, `v_revenue_metrics`, `v_segment_metrics`, ...) join company and filing info into each metric table for easier browsing.
+
+SPCX 2025 segment mix (Connectivity / Starlink, Space launches, AI / Other) is maintained in `data/segment_metrics.json` and re-applied after every Yahoo Finance rebuild via `scripts/load_segment_data.py`.
 
 ## Cloud Database (Turso)
 

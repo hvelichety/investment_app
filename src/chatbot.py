@@ -28,12 +28,31 @@ class FinancialChatbot:
             if company.lower() in user_input_lower:
                 ticker = company
                 break
+
+        # Alias common SpaceX references to SPCX
+        if ticker is None and any(
+            term in user_input_lower
+            for term in ['spacex', 'starlink', 'starship']
+        ):
+            ticker = 'SPCX'
         
         query_type = None
         chart_type = None
+
+        wants_segments = any(
+            word in user_input_lower
+            for word in [
+                'segment', 'segments', 'breakdown', 'broken down',
+                'by segment', 'starlink', 'connectivity', 'launch services',
+                'ai / other', 'ai/other',
+            ]
+        )
         
         # Determine query type
-        if any(word in user_input_lower for word in ['compare', 'comparison', 'vs', 'versus']):
+        if wants_segments and (ticker or 'spcx' in user_input_lower or 'spacex' in user_input_lower):
+            query_type = 'segments'
+            ticker = ticker or 'SPCX'
+        elif any(word in user_input_lower for word in ['compare', 'comparison', 'vs', 'versus']):
             query_type = 'compare'
         elif any(word in user_input_lower for word in ['trend', 'history', 'over time', 'historical']):
             query_type = 'trend'
@@ -48,7 +67,7 @@ class FinancialChatbot:
         
         # Determine metric
         metric = None
-        if 'revenue' in user_input_lower:
+        if 'revenue' in user_input_lower or wants_segments:
             metric = 'revenue'
         elif 'profit' in user_input_lower or 'income' in user_input_lower:
             metric = 'profit'
@@ -73,6 +92,8 @@ class FinancialChatbot:
         metric = parsed_query['metric']
         
         try:
+            if query_type == 'segments' and ticker:
+                return self.get_segment_breakdown(ticker)
             if query_type == 'overview':
                 return self.get_overview()
             elif query_type == 'compare':
@@ -80,6 +101,14 @@ class FinancialChatbot:
             elif query_type == 'trend' and ticker:
                 return self.get_trend(ticker, metric)
             elif query_type == 'company_detail' and ticker:
+                # Prefer segment pie when asking about SPCX revenue specifically
+                original = (parsed_query.get('original') or '').lower()
+                if (
+                    metric == 'revenue'
+                    and self.query.has_segment_data(ticker)
+                    and any(w in original for w in ['revenue', 'segment', 'breakdown'])
+                ):
+                    return self.get_segment_breakdown(ticker)
                 return self.get_company_detail(ticker)
             elif query_type == 'latest' and ticker:
                 return self.get_latest_metrics(ticker)
@@ -87,6 +116,55 @@ class FinancialChatbot:
                 return self.get_overview()
         except Exception as e:
             return f"I encountered an error: {str(e)}", None, None
+
+    def _format_profitability(self, status: Optional[str]) -> str:
+        mapping = {
+            'profitable': 'Profitable (strong)',
+            'near_breakeven': 'Near break-even / modest losses',
+            'loss_making': 'Large losses',
+        }
+        if not status:
+            return 'n/a'
+        return mapping.get(status, status.replace('_', ' ').title())
+
+    def get_segment_breakdown(self, ticker: str) -> Tuple[str, Optional[str], Optional[Dict]]:
+        """Return operating-segment revenue mix for a company."""
+        df = self.query.get_latest_segment_breakdown(ticker)
+        if df.empty:
+            return (
+                f"No segment revenue data is available for {ticker} yet.",
+                None,
+                None,
+            )
+
+        filing_date = df.iloc[0]['filing_date']
+        total_revenue = df['revenue'].sum()
+        response = f"**🧩 {ticker} Revenue by Segment ({filing_date})**\n\n"
+        response += f"**Total (sum of segments):** ${total_revenue/1e9:.2f}B\n\n"
+
+        for _, row in df.iterrows():
+            share = row['revenue_share_pct']
+            share_txt = f"{share:.0f}%" if pd.notna(share) else "n/a"
+            response += (
+                f"**{row['segment_name']}** — ${row['revenue']/1e9:.2f}B "
+                f"({share_txt})\n"
+                f"- Profitability: {self._format_profitability(row.get('profitability_status'))}\n"
+            )
+            if pd.notna(row.get('notes')) and row.get('notes'):
+                response += f"- {row['notes']}\n"
+            response += "\n"
+
+        chart_data = [{
+            'values': (df['revenue'] / 1e9).tolist(),
+            'labels': df['segment_name'].tolist(),
+            'type': 'pie',
+            'hole': 0.35,
+            'textinfo': 'label+percent',
+        }]
+        chart_config = {
+            'title': f'{ticker} Revenue Segments ({filing_date})',
+        }
+        return response, 'pie', {'data': chart_data, 'layout': chart_config}
     
     def get_overview(self) -> Tuple[str, str, Dict]:
         """Get overview of all companies"""
@@ -209,6 +287,29 @@ class FinancialChatbot:
                 response += f"- Total Assets: ${latest['total_assets']/1e9:.2f}B\n"
             if pd.notna(latest.get('employee_count')):
                 response += f"- Employees: {int(latest['employee_count']):,}\n"
+
+        # Surface segment mix when available (e.g. SPCX)
+        segments = self.query.get_latest_segment_breakdown(ticker)
+        if not segments.empty:
+            response += "\n**Revenue by Segment:**\n"
+            for _, row in segments.iterrows():
+                share = row['revenue_share_pct']
+                share_txt = f"{share:.0f}%" if pd.notna(share) else "n/a"
+                response += (
+                    f"- {row['segment_name']}: ${row['revenue']/1e9:.2f}B "
+                    f"({share_txt}) — {self._format_profitability(row.get('profitability_status'))}\n"
+                )
+            chart_data = [{
+                'values': (segments['revenue'] / 1e9).tolist(),
+                'labels': segments['segment_name'].tolist(),
+                'type': 'pie',
+                'hole': 0.35,
+                'textinfo': 'label+percent',
+            }]
+            chart_config = {
+                'title': f'{ticker} Revenue Segments ({segments.iloc[0]["filing_date"]})',
+            }
+            return response, 'pie', {'data': chart_data, 'layout': chart_config}
         
         # Create multi-metric chart
         df_sorted = df.sort_values('filing_date')
@@ -316,6 +417,7 @@ if __name__ == "__main__":
     print("  - Show NVDA revenue trend")
     print("  - What are the latest metrics for TSLA?")
     print("  - Compare revenue across companies")
+    print("  - Show SPCX revenue by segment")
     print("\nType 'quit' to exit\n")
     
     while True:

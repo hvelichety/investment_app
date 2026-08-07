@@ -136,6 +136,22 @@ class MetricsQuery:
         """
         
         return pd.read_sql_query(query, self.db.conn)
+
+    def get_segment_breakdown(self, ticker: str, filing_date: Optional[str] = None) -> pd.DataFrame:
+        """Get operating-segment revenue breakdown for a company."""
+        return self.db.get_segment_metrics(ticker, filing_date=filing_date)
+
+    def get_latest_segment_breakdown(self, ticker: str) -> pd.DataFrame:
+        """Get segment breakdown for the company's most recent segmented filing."""
+        df = self.get_segment_breakdown(ticker)
+        if df.empty:
+            return df
+        latest_date = df['filing_date'].max()
+        return df[df['filing_date'] == latest_date].copy()
+
+    def has_segment_data(self, ticker: str) -> bool:
+        """Whether the company has any operating-segment rows."""
+        return ticker in self.db.companies_with_segments()
     
     def get_profitability_comparison(self) -> pd.DataFrame:
         """Compare profitability metrics across all companies"""
