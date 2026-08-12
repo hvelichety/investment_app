@@ -170,6 +170,8 @@ export TURSO_AUTH_TOKEN="your-token"
 python3 scripts/migrate_to_cloud.py   # one-time (or repeat) sync
 ```
 
+If Turso is configured but unreachable or missing tables (common after creating an empty cloud DB), the app **falls back to the bundled local `data/financial_metrics.db`** so chat keeps working. Check `GET /status` for `backend`, `mode`, and `fallback_reason`. Re-run `scripts/migrate_to_cloud.py` to repair the cloud schema/data.
+
 The weekly GitHub Actions workflow syncs to Turso automatically when the `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` repository secrets are configured.
 
 ## Automated Updates
