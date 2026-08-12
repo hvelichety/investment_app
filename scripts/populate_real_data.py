@@ -10,6 +10,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scripts.yahoo_finance_fetcher import YahooFinanceDataFetcher  # noqa: E402
+from scripts.load_segment_data import load_segment_data  # noqa: E402
 from src.database_manager import MetricsDatabase  # noqa: E402
 from src.query_interface import MetricsQuery  # noqa: E402
 
@@ -95,11 +96,24 @@ def populate_real_data():
             traceback.print_exc()
             failed.append(ticker)
     
-    # Export to Excel
+    db.close()
+
+    # Overlay operating-segment breakdowns (not available from Yahoo Finance)
+    print("\n" + "=" * 70)
+    print("LOADING SEGMENT REVENUE OVERLAYS")
+    print("=" * 70)
+    try:
+        load_segment_data()
+    except Exception as e:
+        print(f"✗ Segment load error: {e}")
+
+    # Export to Excel (re-open so segment rows are included)
     print("\n" + "=" * 70)
     print("EXPORTING RESULTS")
     print("=" * 70)
-    
+
+    db = MetricsDatabase()
+    db.connect()
     try:
         excel_path = os.path.join(DATA_DIR, 'financial_metrics_real.xlsx')
         db.export_to_excel(excel_path)

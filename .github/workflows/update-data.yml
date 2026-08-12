@@ -28,6 +28,8 @@ jobs:
         run: |
           rm -f data/financial_metrics.db
           python scripts/populate_real_data.py
+          # Segment overlays are loaded inside populate_real_data.py from
+          # data/segment_metrics.json (keeps SPCX Connectivity/Space/AI after rebuild).
 
       - name: Sync cloud database (Turso)
         env:

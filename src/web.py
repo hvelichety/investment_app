@@ -10,7 +10,7 @@ import threading
 from flask import Flask, render_template, request, jsonify
 
 from .chatbot import FinancialChatbot
-from .db_backend import get_connection, backend_name, is_cloud_configured
+from .db_backend import get_connection, backend_status, resolve_backend
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -44,10 +44,10 @@ def index():
 @app.route('/status')
 def status():
     """Report which database backend this deployment is using."""
-    info = {
-        'backend': backend_name(),
-        'cloud': is_cloud_configured(),
-    }
+    # Re-probe so a freshly migrated Turso DB is picked up without restart.
+    resolve_backend(force=True)
+    info = backend_status()
+    info['cloud'] = info['cloud_configured']
     try:
         conn = get_db_connection()
         try:
@@ -56,6 +56,11 @@ def status():
             info['companies'] = cursor.fetchone()[0]
             cursor.execute("SELECT COUNT(*) FROM all_metrics")
             info['metrics'] = cursor.fetchone()[0]
+            try:
+                cursor.execute("SELECT COUNT(*) FROM segment_metrics")
+                info['segments'] = cursor.fetchone()[0]
+            except Exception:
+                info['segments'] = 0
             info['database_ok'] = True
         finally:
             conn.close()
@@ -107,7 +112,9 @@ def get_examples():
         "Show me GOOG's financial performance",
         "Compare revenue of all companies",
         "What's AMD's net margin?",
-        "Show CRM historical data"
+        "Show CRM historical data",
+        "Show SPCX revenue by segment",
+        "Break down SpaceX revenue into Starlink, launches, and AI",
     ]
     return jsonify({'examples': examples})
 

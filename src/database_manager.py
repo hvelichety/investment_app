@@ -150,6 +150,21 @@ class MetricsDatabase:
                 FOREIGN KEY (filing_id) REFERENCES filings(filing_id)
             )
         """)
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS segment_metrics (
+                segment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                filing_id INTEGER NOT NULL,
+                segment_key TEXT NOT NULL,
+                segment_name TEXT NOT NULL,
+                revenue REAL,
+                revenue_share_pct REAL,
+                profitability_status TEXT,
+                notes TEXT,
+                FOREIGN KEY (filing_id) REFERENCES filings(filing_id),
+                UNIQUE (filing_id, segment_key)
+            )
+        """)
         
         self._create_views()
         
@@ -168,6 +183,7 @@ class MetricsDatabase:
             'operational_metrics',
             'valuation_metrics',
             'all_metrics',
+            'segment_metrics',
         ]
         
         for table in metric_tables:
@@ -337,6 +353,72 @@ class MetricsDatabase:
                 )
         
         self.conn.commit()
+
+    def insert_segment_metrics(self, filing_id: int, segments: List[Dict[str, Any]]):
+        """Insert or replace operating-segment rows for a filing."""
+        for segment in segments:
+            self.cursor.execute(
+                """
+                INSERT INTO segment_metrics (
+                    filing_id, segment_key, segment_name, revenue,
+                    revenue_share_pct, profitability_status, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(filing_id, segment_key) DO UPDATE SET
+                    segment_name = excluded.segment_name,
+                    revenue = excluded.revenue,
+                    revenue_share_pct = excluded.revenue_share_pct,
+                    profitability_status = excluded.profitability_status,
+                    notes = excluded.notes
+                """,
+                (
+                    filing_id,
+                    segment['segment_key'],
+                    segment['segment_name'],
+                    segment.get('revenue'),
+                    segment.get('revenue_share_pct'),
+                    segment.get('profitability_status'),
+                    segment.get('notes'),
+                ),
+            )
+        self.conn.commit()
+
+    def get_segment_metrics(self, ticker: str, filing_date: Optional[str] = None) -> pd.DataFrame:
+        """Get operating-segment revenue breakdown for a company."""
+        query = """
+            SELECT
+                c.ticker,
+                c.company_name,
+                f.filing_date,
+                f.filing_type,
+                s.segment_key,
+                s.segment_name,
+                s.revenue,
+                s.revenue_share_pct,
+                s.profitability_status,
+                s.notes
+            FROM companies c
+            JOIN filings f ON c.company_id = f.company_id
+            JOIN segment_metrics s ON f.filing_id = s.filing_id
+            WHERE c.ticker = ?
+        """
+        params: List[Any] = [ticker]
+        if filing_date:
+            query += " AND f.filing_date = ?"
+            params.append(filing_date)
+        query += " ORDER BY f.filing_date DESC, s.revenue DESC"
+        return pd.read_sql_query(query, self.conn, params=params)
+
+    def companies_with_segments(self) -> List[str]:
+        """Return tickers that have at least one segment row."""
+        query = """
+            SELECT DISTINCT c.ticker
+            FROM companies c
+            JOIN filings f ON c.company_id = f.company_id
+            JOIN segment_metrics s ON f.filing_id = s.filing_id
+            ORDER BY c.ticker
+        """
+        df = pd.read_sql_query(query, self.conn)
+        return df['ticker'].tolist()
     
     def get_company_metrics(self, ticker: str) -> pd.DataFrame:
         """Get all metrics for a company"""
@@ -417,6 +499,25 @@ class MetricsDatabase:
             
             all_metrics_df = self.get_all_companies_metrics()
             all_metrics_df.to_excel(writer, sheet_name='All_Metrics', index=False)
+
+            segments_df = pd.read_sql_query("""
+                SELECT
+                    c.ticker,
+                    c.company_name,
+                    f.filing_date,
+                    s.segment_key,
+                    s.segment_name,
+                    s.revenue,
+                    s.revenue_share_pct,
+                    s.profitability_status,
+                    s.notes
+                FROM segment_metrics s
+                JOIN filings f ON s.filing_id = f.filing_id
+                JOIN companies c ON f.company_id = c.company_id
+                ORDER BY c.ticker, f.filing_date DESC, s.revenue DESC
+            """, self.conn)
+            if not segments_df.empty:
+                segments_df.to_excel(writer, sheet_name='Segments', index=False)
             
             for ticker in companies_df['ticker']:
                 company_metrics = self.get_company_metrics(ticker)
@@ -444,5 +545,6 @@ if __name__ == "__main__":
     print("  - operational_metrics")
     print("  - valuation_metrics")
     print("  - all_metrics")
+    print("  - segment_metrics")
     
     db.close()

@@ -59,6 +59,11 @@ The chatbot understands natural language! Try these:
 - "What's the historical data for TSLA?"
 - "Show AMD's performance over time"
 
+### Segment Breakdown
+- "Show SPCX revenue by segment"
+- "Break down SpaceX revenue into Starlink, launches, and AI"
+- "What's Starlink's share of SPCX revenue?"
+
 ### Company Details
 - "Tell me about GOOG"
 - "What are the latest metrics for CRM?"
@@ -190,6 +195,7 @@ return response, chart
 | Trend | "NVDA revenue over time" | Line Chart |
 | Detail | "Tell me about TSLA" | Multi-line |
 | Latest | "Latest metrics for AMD" | Pie Chart |
+| Segments | "Show SPCX revenue by segment" | Pie Chart |
 
 ### By Metric
 - **Revenue**: Total revenue, revenue growth

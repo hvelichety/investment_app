@@ -36,6 +36,7 @@ def test_database_schema():
         'per_share_metrics',
         'profitability_metrics',
         'revenue_metrics',
+        'segment_metrics',
         'valuation_metrics'
     ]
     
@@ -77,12 +78,33 @@ def test_data_insertion():
     
     db.insert_metrics(filing_id, test_metrics)
     print(f"  ✓ Inserted {len(test_metrics)} metrics")
+
+    db.insert_segment_metrics(filing_id, [
+        {
+            'segment_key': 'core',
+            'segment_name': 'Core',
+            'revenue': 700000.0,
+            'revenue_share_pct': 70.0,
+            'profitability_status': 'profitable',
+            'notes': 'Primary segment',
+        },
+        {
+            'segment_key': 'other',
+            'segment_name': 'Other',
+            'revenue': 300000.0,
+            'revenue_share_pct': 30.0,
+            'profitability_status': 'near_breakeven',
+            'notes': 'Secondary segment',
+        },
+    ])
+    segments = db.get_segment_metrics("TEST")
+    print(f"  ✓ Inserted/retrieved {len(segments)} segment rows")
     
     result = db.get_company_metrics("TEST")
     print(f"  ✓ Retrieved {len(result)} rows of data")
     
     db.close()
-    return True
+    return len(segments) == 2
 
 
 def test_query_interface():
@@ -99,9 +121,12 @@ def test_query_interface():
     
     overview = query.get_company_overview("TEST")
     print(f"  ✓ Generated company overview")
+
+    segments = query.get_latest_segment_breakdown("TEST")
+    print(f"  ✓ Retrieved {len(segments)} segment rows via query interface")
     
     query.close()
-    return True
+    return len(segments) == 2
 
 
 def test_export():
