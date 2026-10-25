@@ -41,11 +41,12 @@ def current_price(ticker: str):
 def render(ticker: str, result, price, price_date) -> str:
     status = "✅ passed review" if result.clean else "⚠️ open issues below — check before sharing"
     lines = [
-        f"<!-- Draft for review. Valued at {price} on {price_date}. -->",
+        f"<!-- Draft for review. Valued at ${price:,.2f} on {price_date}. -->" if price is not None
+        else "<!-- Draft for review. No share price available, so no valuation. -->",
         result.memo,
         "",
         "---",
-        f"**Review status:** {status}" + (" (revised once)" if result.revised else ""),
+        f"**Review status:** {status}" + (f" (revised {len(result.history) - 1}x)" if result.revised else ""),
         "",
     ]
     if result.unsupported_numbers:

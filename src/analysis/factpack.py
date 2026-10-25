@@ -70,6 +70,15 @@ def _segment_label(item: str) -> str:
     return "Total" if item == "total" else SEGMENT_LABELS.get(item, item)
 
 
+def _period_header(fund: Fundamentals, period: str, metrics) -> str:
+    """Quarter label with the documents its figures come from, e.g. "2026Q3 [q3_2026_release]" """
+    sources = []
+    for (p, m, _), fact in sorted(fund.facts.items()):
+        if p == period and m in metrics:
+            sources += [s for s in fact.sources if s not in sources]
+    return f"{period} [{', '.join(sources)}]" if sources else period
+
+
 def build_factpack(fund: Fundamentals, price: Optional[float] = None, price_date: Optional[str] = None,
                    quarters: int = 5, market_section: Optional[str] = None) -> str:
     qs = fund.quarters()[-quarters:]
@@ -78,12 +87,14 @@ def build_factpack(fund: Fundamentals, price: Optional[float] = None, price_date
         f"# {fund.company} ({fund.ticker}) fact pack",
         "",
         f"Latest reported quarter: **{latest}**. Units: USD. "
+        "Each column header names the source documents for that quarter; cite those keys. "
         "† = derived from company totals (formula in the appendix); ‡ = third-party estimate, not company data.",
         "",
     ]
 
     for metric, label in METRIC_LABELS.items():
-        lines += [f"## {label} by segment", "", "| Segment | " + " | ".join(qs) + " |",
+        headers = [_period_header(fund, q, [metric]) for q in qs]
+        lines += [f"## {label} by segment", "", "| Segment | " + " | ".join(headers) + " |",
                   "|---|" + "---|" * len(qs)]
         for item in fund.segments + ["total"]:
             row = [_cell(fund.get(q, metric, item)) for q in qs]
@@ -106,7 +117,8 @@ def build_factpack(fund: Fundamentals, price: Optional[float] = None, price_date
         )
     lines.append("")
 
-    lines += ["## Operating KPIs", "", "| KPI | " + " | ".join(qs) + " |", "|---|" + "---|" * len(qs)]
+    headers = [_period_header(fund, q, ["kpi"]) for q in qs]
+    lines += ["## Operating KPIs", "", "| KPI | " + " | ".join(headers) + " |", "|---|" + "---|" * len(qs)]
     for kpi, label in KPI_LABELS.items():
         fmt = KPI_FORMATS.get(kpi, _plain)
         row = [_cell(fund.get(q, "kpi", kpi), fmt) for q in qs]
@@ -168,7 +180,8 @@ def build_factpack(fund: Fundamentals, price: Optional[float] = None, price_date
     lines.append("")
 
     derived = sorted(
-        ((p, m, i, f) for (p, m, i), f in fund.facts.items() if f.derived and p in qs),
+        ((p, m, i, f) for (p, m, i), f in fund.facts.items()
+         if f.derived and p in qs and (m in METRIC_LABELS or m == "kpi")),
         key=lambda t: (t[0], t[1], t[2]),
     )
     if derived:
