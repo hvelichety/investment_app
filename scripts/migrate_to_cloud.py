@@ -45,24 +45,25 @@ def main():
     )
     tables = lcur.fetchall()
 
-    # Drop views first (they may depend on tables), then tables
+    # Parent tables before children to satisfy foreign keys (libsql enforces
+    # them): companies <- filings <- metric tables, companies <- daily_prices
+    priority = {'companies': 0, 'filings': 1}
+    ordered_names = sorted([n for n, _ in tables], key=lambda n: (priority.get(n, 2), n))
+
+    # Drop views first (they may depend on tables), then tables children-first
+    # so no drop leaves rows pointing at a missing parent
     rcur = remote.cursor()
     rcur.execute("SELECT name FROM sqlite_master WHERE type='view'")
     for (vname,) in rcur.fetchall():
         remote.execute(f'DROP VIEW IF EXISTS "{vname}"')
-    for name, _ in tables:
+    for name in reversed(ordered_names):
         remote.execute(f'DROP TABLE IF EXISTS "{name}"')
     remote.commit()
 
-    # Create all tables first (metric tables have foreign keys to filings,
-    # which libsql enforces at insert time)
+    # Create all tables first, then insert parents before children
     for _, create_sql in tables:
         remote.execute(create_sql)
     remote.commit()
-
-    # Insert parent tables before children to satisfy foreign keys
-    priority = {'companies': 0, 'filings': 1}
-    ordered_names = sorted([n for n, _ in tables], key=lambda n: (priority.get(n, 2), n))
 
     total_rows = 0
     for name in ordered_names:
@@ -70,8 +71,7 @@ def main():
         rows = lcur.fetchall()
         if rows:
             placeholders = ", ".join(["?"] * len(rows[0]))
-            for row in rows:
-                remote.execute(f'INSERT INTO "{name}" VALUES ({placeholders})', row)
+            remote.cursor().executemany(f'INSERT INTO "{name}" VALUES ({placeholders})', rows)
         remote.commit()
 
         total_rows += len(rows)

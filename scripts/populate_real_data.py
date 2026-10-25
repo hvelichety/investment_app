@@ -83,6 +83,14 @@ def populate_real_data():
                     metrics_count += len(metrics)
                     print(f"  ✓ {filing['filing_type']} ({filing['filing_date']}): {len(metrics)} metrics")
             
+            # Daily price history
+            prices = fetcher.get_price_history(ticker)
+            if prices:
+                db.insert_prices(company_id, prices)
+                print(f"  ✓ Prices: {len(prices)} days ({prices[0]['date']} to {prices[-1]['date']})")
+            else:
+                print("  ✗ Prices: none returned")
+            
             print(f"\n✓ {ticker} completed: {filings_count} filings, {metrics_count} metrics")
             successful.append(ticker)
             total_metrics += metrics_count
