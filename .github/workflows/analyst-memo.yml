@@ -1,0 +1,51 @@
+name: Analyst Memo
+
+# Drafts an analyst memo for a ticker and opens it as an issue for review.
+# Nothing is posted to Slack; a person approves the draft first.
+on:
+  workflow_dispatch:
+    inputs:
+      ticker:
+        description: Ticker with data/fundamentals and playbooks files (e.g. SPCX)
+        required: true
+        default: SPCX
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  memo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install anthropic pyyaml pandas yfinance
+
+      - name: Check data and run tests
+        run: python tests/test_analysis.py
+
+      - name: Draft memo
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python scripts/run_analyst.py "${{ inputs.ticker }}"
+
+      - name: Keep fact pack and memo
+        uses: actions/upload-artifact@v4
+        with:
+          name: analyst-${{ inputs.ticker }}
+          path: reports/
+
+      - name: Open review issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TICKER: ${{ inputs.ticker }}
+        run: |
+          gh issue create \
+            --title "Analyst memo for review: $TICKER ($(date -u +%Y-%m-%d))" \
+            --body-file "reports/${TICKER}_memo.md"
