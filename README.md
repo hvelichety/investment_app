@@ -155,6 +155,18 @@ Core tables:
 
 Convenience views (`v_company_overview`, `v_revenue_metrics`, `v_per_share_metrics`, ...) join company and filing info into each metric table for easier browsing.
 
+## Analyst Agent
+
+Drafts a senior-analyst style memo per ticker, following the framework used in the `#stock-*` Slack channels. Numbers never come from the model:
+
+1. **Sourced data** — `data/fundamentals/<TICKER>.yaml` holds quarterly segment figures and KPIs exactly as printed in company releases and SEC filings, each tied to its source. Quarters a company never printed alone (e.g. Q4 = FY − 9M) are derived in code and marked †. Segment and period totals are cross-checked on load, and `scripts/verify_sources.py` checks every figure against the cited document (CI: `Verify Fundamentals`).
+2. **Calculations in code** — `src/analysis/metrics.py` computes growth, margins, mix, TTM, valuation multiples and surprises vs estimates (‡ = third-party).
+3. **Fact pack** — `python3 scripts/build_factpack.py SPCX` renders all of the above as Markdown; it is the only input the model sees.
+4. **Analyst + CFO reviewer** — `scripts/run_analyst.py SPCX` has Claude write the memo from the fact pack and `playbooks/<TICKER>.yaml`, rejects any figure not in the fact pack, runs a CFO-style review, and revises once if needed.
+5. **Review first** — the `Analyst Memo` workflow (manual trigger, needs the `ANTHROPIC_API_KEY` secret) opens the draft as a GitHub issue. Nothing is posted to Slack automatically.
+
+To add a ticker: create `data/fundamentals/<TICKER>.yaml` and `playbooks/<TICKER>.yaml`, then run `python3 tests/test_analysis.py` and `python3 scripts/verify_sources.py <TICKER>`.
+
 ## Cloud Database (Turso)
 
 The app uses the local SQLite file by default. To use a Turso cloud database instead, set:

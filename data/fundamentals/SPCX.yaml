@@ -1,0 +1,139 @@
+# SpaceX (SPCX) reported fundamentals.
+#
+# Only figures as printed in a company document go under `reported`, keyed by
+# the period they cover. Quarters the company never printed on their own
+# (e.g. Q1 2025, Q4 2025) are derived in code from the H1 / 9M / FY totals and
+# flagged as derived, so nothing here is a hand-calculated number.
+#
+# Units: USD millions unless the key says otherwise.
+# Segment note: the AI segment is labelled "Super Intelligence (SI)" from the
+# Q3 2026 release onward; it is the same segment.
+
+ticker: SPCX
+company: Space Exploration Technologies Corp.
+segments: [space, connectivity, ai]
+
+sources:
+  s1:
+    title: Form S-1 registration statement (prospectus summary)
+    url: https://www.sec.gov/Archives/edgar/data/1181412/000162828026036936/spaceexplorationtechnologi.htm
+    kind: sec_filing
+  q2_2026_release:
+    title: SpaceX Reports Second Quarter 2026 Results
+    url: https://s21.q4cdn.com/184289198/files/doc_financials/2026/q2/SpaceX-Reports-Second-Quarter-2026-Results.pdf
+    published: 2026-08-04
+    kind: company_release
+  q3_2026_release:
+    title: SpaceX Reports Third Quarter 2026 Results
+    url: https://s21.q4cdn.com/184289198/files/content_files/SpaceX-Reports-Third-Quarter-2026-Results.pdf
+    published: 2026-10-20
+    kind: company_release
+  q3_2026_consensus:
+    title: "Q3 2026 segment consensus (StreetAccount via CNBC; Space from TipRanks), as posted in #stock-spcx on 2026-10-20"
+    url: https://slack.com/archives/C0BKZKYD4JD/p1792534982571909
+    kind: third_party_estimate
+
+reported:
+  2025Q2:
+    source: q2_2026_release
+    revenue: {space: 746, connectivity: 2588, ai: 737, total: 4071}
+    operating_income: {space: -369, connectivity: 923, ai: -1524, total: -970}
+    adj_ebitda: {space: -93, connectivity: 1583, ai: -276, total: 1214}
+    capex: {space: 946, connectivity: 1130, ai: 749, total: 2825}
+    net_income: -1008
+    kpis: {starlink_subscribers_m: 6.0, starlink_arpu_usd: 85, launches_total: 46, launches_customer: 9, launches_internal: 37, mass_to_orbit_t: 652, compute_gw: 0.4}
+  2025H1:
+    source: q2_2026_release
+    revenue: {space: 1611, connectivity: 5062, ai: 1465, total: 8138}
+    operating_income: {space: -439, connectivity: 1956, ai: -2460, total: -943}
+    adj_ebitda: {total: 2944}
+    net_income: -1536
+  2025Q3:
+    source: q3_2026_release
+    revenue: {space: 1666, connectivity: 3097, ai: 813, total: 5576}
+    operating_income: {space: 259, connectivity: 1190, ai: -1722, total: -273}
+    adj_ebitda: {space: 674, connectivity: 1923, ai: -428, total: 2169}
+    capex: {space: 1113, connectivity: 1007, ai: 4760, total: 6880}
+    net_income: -1054
+    kpis: {starlink_subscribers_m: 7.2, starlink_arpu_usd: 83, launches_total: 44, launches_customer: 15, launches_internal: 29, mass_to_orbit_t: 525, compute_gw: 0.6}
+  2025-9M:
+    source: q3_2026_release
+    revenue: {space: 3277, connectivity: 8159, ai: 2278, total: 13714}
+    operating_income: {space: -181, connectivity: 3147, ai: -4182, total: -1216}
+    adj_ebitda: {space: 803, connectivity: 5123, ai: -813, total: 5113}
+    capex: {space: 2818, connectivity: 2951, ai: 8077, total: 13846}
+    net_income: -2590
+    kpis: {launches_total: 128, launches_customer: 36, launches_internal: 92, mass_to_orbit_t: 1627}
+  2025FY:
+    source: s1
+    revenue: {space: 4086, connectivity: 11387, ai: 3201, total: 18674}
+    operating_income: {space: -657, connectivity: 4423, ai: -6355, total: -2589}
+    adj_ebitda: {space: 653, connectivity: 7168, ai: -1237, total: 6584}
+    capex: {space: 3832, connectivity: 4178, ai: 12727}
+  2026Q1:
+    source: q2_2026_release
+    revenue: {space: 619, connectivity: 3257, ai: 818, total: 4694}
+    operating_income: {space: -662, connectivity: 1188, ai: -2469, total: -1943}
+    adj_ebitda: {space: -351, connectivity: 2087, ai: -609, total: 1127}
+    capex: {space: 1052, connectivity: 1332, ai: 7723, total: 10107}
+    kpis: {starlink_subscribers_m: 10.3, starlink_arpu_usd: 66, launches_total: 40, launches_customer: 7, launches_internal: 33, mass_to_orbit_t: 556, compute_gw: 1.0}
+  2026Q2:
+    source: q2_2026_release
+    revenue: {space: 962, connectivity: 4291, ai: 2561, total: 7814}
+    operating_income: {space: -542, connectivity: 1656, ai: -1257, total: -143}
+    adj_ebitda: {space: -205, connectivity: 2597, ai: 1146, total: 3538}
+    capex: {space: 1174, connectivity: 1367, ai: 15828, total: 18369}
+    net_income: -541
+    kpis: {starlink_subscribers_m: 12.0, starlink_arpu_usd: 66, launches_total: 38, launches_customer: 10, launches_internal: 28, mass_to_orbit_t: 485, compute_gw: 1.4}
+  2026H1:
+    source: q2_2026_release
+    revenue: {space: 1581, connectivity: 7548, ai: 3379, total: 12508}
+    operating_income: {space: -1204, connectivity: 2844, ai: -3726, total: -2086}
+    adj_ebitda: {total: 4665}
+    net_income: -4817
+  2026Q3:
+    source: q3_2026_release
+    revenue: {space: 1767, connectivity: 5248, ai: 7560, total: 14575}
+    operating_income: {space: -7, connectivity: 2367, ai: 431, total: 2791}
+    adj_ebitda: {space: 357, connectivity: 3499, ai: 4953, total: 8809}
+    capex: {space: 1606, connectivity: 1543, ai: 16444, total: 19593}
+    net_income: 4404
+    kpis: {starlink_subscribers_m: 13.6, starlink_arpu_usd: 69, launches_total: 35, launches_customer: 12, launches_internal: 23, mass_to_orbit_t: 476, compute_gw: 1.7}
+  2026-9M:
+    source: q3_2026_release
+    revenue: {space: 3348, connectivity: 12796, ai: 10939, total: 27083}
+    operating_income: {space: -1211, connectivity: 5211, ai: -3295, total: 705}
+    adj_ebitda: {space: -199, connectivity: 8183, ai: 5490, total: 13474}
+    capex: {space: 3832, connectivity: 4242, ai: 39995, total: 48069}
+    net_income: -413
+    kpis: {launches_total: 113, launches_customer: 29, launches_internal: 84, mass_to_orbit_t: 1517}
+
+# Point-in-time balance sheet items. Shares in millions by class.
+balance_sheet:
+  2025-12-31:
+    source: q3_2026_release
+    cash: 24747
+    marketable_securities: 0
+    debt_current: 928
+    debt_noncurrent: 21968
+    shares_m: {class_a: 1952, class_b: 644, class_c: 482}
+  2026-06-30:
+    source: q2_2026_release
+    cash: 93522
+    marketable_securities: 6487
+    debt_current: 2525
+    debt_noncurrent: 36839
+    shares_m: {class_a: 7607, class_b: 5569}
+  2026-09-30:
+    source: q3_2026_release
+    cash: 51294
+    marketable_securities: 38561
+    debt_current: 2698
+    debt_noncurrent: 36146
+    shares_m: {class_a: 8240, class_b: 5339}
+
+# Third-party expectations, kept apart from reported figures.
+estimates:
+  2026Q3:
+    source: q3_2026_consensus
+    revenue: {space: 1460, connectivity: 4840, ai: 6470, total: 12720}

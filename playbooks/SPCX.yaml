@@ -1,0 +1,51 @@
+# Analyst playbook for SpaceX (SPCX).
+#
+# Tells the analyst agent what matters for this company and how to judge it.
+# The numbers themselves always come from the fact pack
+# (data/fundamentals/SPCX.yaml), never from this file.
+# Framework follows the analysis in #stock-spcx.
+
+ticker: SPCX
+slack_channel: C0BKZKYD4JD   # #stock-spcx
+
+thesis_questions:
+  - Is Connectivity (Starlink) compounding? Subscriber growth, ARPU trend, and whether revenue growth is volume- or price-led.
+  - Is the AI / Super Intelligence segment's profit swing durable, or driven by one-off contracts? Compare operating income to adjusted EBITDA and to the capex being spent to earn it.
+  - Is Space (launch) a cash user or contributor this quarter, and what do customer vs internal launches say about Starlink deployment pace?
+  - What multiple is the market paying (EV / TTM revenue, EV / run-rate) and what growth does that require?
+  - How much of the balance sheet is being consumed by capex, and how many quarters of runway does net cash cover at the current burn?
+
+kpis:
+  - starlink_subscribers_m
+  - starlink_arpu_usd
+  - launches_customer
+  - launches_internal
+  - mass_to_orbit_t
+  - compute_gw
+
+leading_indicators:
+  - Launch cadence and failures lead satellite deployment, which leads Starlink coverage and subscribers.
+  - Nameplate compute (GW) leads AI segment capacity and revenue.
+
+valuation:
+  primary: [ev_to_ttm_revenue, ev_to_run_rate_revenue]
+  secondary: [mcap_to_ttm_revenue, ev_to_ttm_adj_ebitda]
+  notes:
+    - Revenue multiples are the reference because consolidated earnings are volatile; say so when quoting them.
+    - Use the latest balance sheet and share count; flag when a figure predates the latest quarter.
+
+relative:
+  - ticker: TSLA
+    why: Market-cap premium of SPCX over TSLA matters to the merger thesis discussed in the channels.
+
+events_to_watch:
+  - Insider lockup expirations (schedule shared in #stock-spcx, 2026-10-13).
+  - Quarterly results; the 10-Q follows the release, so check release figures against it.
+
+style:
+  audience: Experienced investors in the channel; write like a senior equity analyst reporting to a CFO.
+  rules:
+    - Lead with what changed this quarter and why it matters, then bull case, bear case, and risks.
+    - Every number must appear in the fact pack and cite its source key; mark derived (†) and third-party (‡) figures as such.
+    - Separate reported facts, calculations, and opinion. No price targets or buy/sell calls.
+    - If the data cannot answer a question, say what is missing instead of estimating.

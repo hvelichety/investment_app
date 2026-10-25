@@ -1,0 +1,42 @@
+name: Verify Fundamentals
+
+# Checks hand-entered figures against the documents they cite whenever
+# the fundamentals data or the analysis code changes.
+on:
+  push:
+    paths:
+      - 'data/fundamentals/**'
+      - 'src/analysis/**'
+      - 'scripts/verify_sources.py'
+      - 'tests/test_analysis.py'
+  pull_request:
+    paths:
+      - 'data/fundamentals/**'
+      - 'src/analysis/**'
+      - 'scripts/verify_sources.py'
+      - 'tests/test_analysis.py'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install pyyaml pandas pypdf anthropic
+
+      - name: Run analysis tests
+        run: python tests/test_analysis.py
+
+      - name: Check figures against source documents
+        env:
+          SEC_USER_AGENT: ${{ vars.SEC_USER_AGENT }}
+        run: python scripts/verify_sources.py
