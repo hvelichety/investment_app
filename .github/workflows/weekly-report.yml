@@ -1,0 +1,63 @@
+name: Weekly Report
+
+# Every Saturday: analyst memo, commentary and fact check for each ticker,
+# opened as one issue per ticker for review. Nothing is posted to Slack;
+# a person approves the draft first.
+on:
+  schedule:
+    # Saturdays 13:00 UTC, after Friday's close is in the price data
+    - cron: '0 13 * * 6'
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: Space-separated tickers (blank = every ticker with a playbook)
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install anthropic pyyaml pandas yfinance
+
+      - name: Check data and run tests
+        run: python tests/test_analysis.py
+
+      - name: Write reports
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TICKERS: ${{ inputs.tickers }}
+        run: python scripts/run_weekly.py $TICKERS
+
+      - name: Keep reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-reports
+          path: reports/
+          if-no-files-found: ignore
+
+      - name: Open review issues
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          shopt -s nullglob
+          for body in reports/*_weekly.md; do
+            ticker=$(basename "$body" _weekly.md)
+            gh issue create \
+              --title "Weekly report for review: $ticker ($(date -u +%Y-%m-%d))" \
+              --body-file "$body"
+          done

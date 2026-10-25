@@ -118,6 +118,67 @@ def _text(message) -> str:
     return "".join(b.text for b in message.content if b.type == "text").strip()
 
 
+WEB_SEARCH = {"type": "web_search_20260209", "name": "web_search"}
+WEB_FETCH = {"type": "web_fetch_20260209", "name": "web_fetch"}
+
+
+@dataclass
+class ToolRun:
+    final: object                 # last assistant message
+    seen_urls: set                # every URL a search or fetch actually returned
+    calls: List[tuple]            # (tool name, input) for client tool calls
+
+
+def _result_urls(block) -> set:
+    content = getattr(block, "content", None)
+    items = content if isinstance(content, list) else [content]
+    return {getattr(i, "url", None) for i in items if getattr(i, "url", None)}
+
+
+def run_tool_loop(client, system: str, prompt: str, tools: list, on_tool=None,
+                  max_tokens: int = 32000, max_rounds: int = 15) -> ToolRun:
+    """Run one task with server tools (web search / fetch) and client tools.
+
+    Server tools run on Anthropic's side; a long server-side loop stops with
+    pause_turn and is resumed by sending the conversation back. Client tool
+    calls go to on_tool(name, input) -> str. Ends when the model ends its turn.
+    """
+    messages = [{"role": "user", "content": prompt}]
+    seen, calls = set(), []
+    for _ in range(max_rounds):
+        with client.beta.messages.stream(
+            model=MODEL,
+            max_tokens=max_tokens,
+            betas=[FALLBACK_BETA],
+            fallbacks="default",
+            output_config={"effort": "high"},
+            system=system,
+            tools=tools,
+            messages=messages,
+        ) as stream:
+            message = stream.get_final_message()
+        if message.stop_reason == "refusal":
+            raise RuntimeError(f"Model declined the request: {message.stop_details}")
+        for block in message.content:
+            if block.type in ("web_search_tool_result", "web_fetch_tool_result"):
+                seen |= _result_urls(block)
+        messages.append({"role": "assistant", "content": message.content})
+
+        if message.stop_reason == "pause_turn":
+            continue
+        if message.stop_reason == "tool_use":
+            results = []
+            for block in message.content:
+                if block.type == "tool_use":
+                    calls.append((block.name, block.input))
+                    output = on_tool(block.name, block.input) if on_tool else "ok"
+                    results.append({"type": "tool_result", "tool_use_id": block.id, "content": output})
+            messages.append({"role": "user", "content": results})
+            continue
+        return ToolRun(message, seen, calls)
+    raise RuntimeError(f"Tool loop did not finish in {max_rounds} rounds")
+
+
 def _write_memo(client, user_content: str) -> str:
     with client.beta.messages.stream(
         model=MODEL,

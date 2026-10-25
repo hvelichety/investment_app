@@ -71,7 +71,7 @@ def _segment_label(item: str) -> str:
 
 
 def build_factpack(fund: Fundamentals, price: Optional[float] = None, price_date: Optional[str] = None,
-                   quarters: int = 5) -> str:
+                   quarters: int = 5, market_section: Optional[str] = None) -> str:
     qs = fund.quarters()[-quarters:]
     latest = qs[-1]
     lines: List[str] = [
@@ -156,10 +156,15 @@ def build_factpack(fund: Fundamentals, price: Optional[float] = None, price_date
             lines.append(f"| {_segment_label(s.item)} | {_money(s.actual)} | {_money(s.estimate)} | {_pct(s.pct)} |")
         lines.append("")
 
+    if market_section:
+        lines.append(market_section)
+
     lines += ["## Sources", ""]
     for key, src in fund.sources.items():
         published = f", published {src['published']}" if src.get("published") else ""
         lines.append(f"- `{key}`: {src['title']} ({src.get('kind', 'source')}{published}) {src['url']}")
+    if market_section:
+        lines.append("- `market_data`: daily closing prices and share counts (market data, not company filings)")
     lines.append("")
 
     derived = sorted(
