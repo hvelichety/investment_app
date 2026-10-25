@@ -78,7 +78,7 @@ REVIEW_SCHEMA = {
 }
 
 # $14.57B, -$477M, 61.1x, +161.4%, 13,579M, 13.6
-NUMBER_RE = re.compile(r"[-+−]?\$?\d[\d,]*(?:\.\d+)?(?:[BMT%x](?![A-Za-z]))?")
+NUMBER_RE = re.compile(r"[-+−]?\$?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[BMT%x](?![A-Za-z]))?")
 PERIOD_RE = re.compile(r"^(?:19|20)\d{2}(?:Q[1-4])?$")
 
 

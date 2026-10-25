@@ -166,7 +166,7 @@ def test_agent_pipeline():
     from src.analysis.agent import run_analyst, unsupported_numbers
 
     factpack = build_factpack(load_fundamentals("SPCX"), price=148, price_date="2026-10-20")
-    first = "Revenue reached $14.6B [q3_2026_release], up 3x."
+    first = "Revenue reached $14.6B [q3_2026_release], up 3x. ARPU was $69, then $66."
     second = "Revenue reached $14.57B [q3_2026_release], +161.4% YoY; 13.6M subscribers."
     fake = _FakeMessages(
         memos=[first, second],
