@@ -13,7 +13,14 @@ import json
 class FinancialChatbot:
     def __init__(self, db_path: str = None):
         self.query = MetricsQuery(db_path)
-        self.companies = self.query.get_all_companies()['ticker'].tolist()
+        companies_df = self.query.get_all_companies()
+        self.companies = companies_df['ticker'].tolist()
+        # Lets "tesla" or "nvidia" resolve to a ticker, not just "TSLA"
+        self.company_names = {
+            str(name).split()[0].strip(',.').lower(): ticker
+            for ticker, name in zip(companies_df['ticker'], companies_df['company_name'])
+            if name
+        }
         
     def close(self):
         self.query.close()
@@ -24,16 +31,24 @@ class FinancialChatbot:
         
         # Extract ticker if mentioned
         ticker = None
+        words = re.findall(r"[a-z]+", user_input_lower)
         for company in self.companies:
-            if company.lower() in user_input_lower:
+            if company.lower() in words:
                 ticker = company
                 break
+        if ticker is None:
+            for word in words:
+                if word in self.company_names:
+                    ticker = self.company_names[word]
+                    break
         
         query_type = None
         chart_type = None
         
         # Determine query type
-        if any(word in user_input_lower for word in ['compare', 'comparison', 'vs', 'versus']):
+        if ticker and any(word in user_input_lower for word in ['price', 'stock', 'quote', 'trading', 'doing']):
+            query_type = 'price'
+        elif any(word in user_input_lower for word in ['compare', 'comparison', 'vs', 'versus']):
             query_type = 'compare'
         elif any(word in user_input_lower for word in ['trend', 'history', 'over time', 'historical']):
             query_type = 'trend'
@@ -81,6 +96,8 @@ class FinancialChatbot:
                 return self.get_trend(ticker, metric)
             elif query_type == 'company_detail' and ticker:
                 return self.get_company_detail(ticker)
+            elif query_type == 'price' and ticker:
+                return self.get_price(ticker)
             elif query_type == 'latest' and ticker:
                 return self.get_latest_metrics(ticker)
             else:
@@ -239,6 +256,63 @@ class FinancialChatbot:
         }
         
         return response, 'line', {'data': chart_data, 'layout': chart_config}
+    
+    def get_price(self, ticker: str) -> Tuple[str, str, Dict]:
+        """Latest close, recent performance and a one-year price chart"""
+        df = self.query.db.get_price_history(ticker)
+        
+        if df.empty:
+            return f"No price data for {ticker} yet. Prices are loaded by the daily data refresh.", None, None
+        
+        df['price_date'] = pd.to_datetime(df['price_date'])
+        latest = df.iloc[-1]
+        last_date = latest['price_date']
+        
+        def change_since(start_date) -> Optional[float]:
+            earlier = df[df['price_date'] <= start_date]
+            if earlier.empty:
+                return None
+            base = earlier.iloc[-1]['close']
+            return (latest['close'] / base - 1) * 100
+        
+        response = f"**💹 {ticker} Stock Price ({last_date:%Y-%m-%d} close)**\n\n"
+        response += f"**${latest['close']:,.2f}**"
+        if len(df) > 1:
+            day = (latest['close'] / df.iloc[-2]['close'] - 1) * 100
+            response += f" ({day:+.2f}% on the day)"
+        response += "\n\n"
+        
+        periods = [
+            ('1 week', last_date - pd.Timedelta(days=7)),
+            ('1 month', last_date - pd.DateOffset(months=1)),
+            ('Year to date', pd.Timestamp(year=last_date.year, month=1, day=1) - pd.Timedelta(days=1)),
+            ('1 year', last_date - pd.DateOffset(years=1)),
+        ]
+        for label, start in periods:
+            change = change_since(start)
+            if change is not None:
+                response += f"- {label}: {change:+.2f}%\n"
+        
+        year = df[df['price_date'] > last_date - pd.DateOffset(years=1)]
+        response += f"- 52-week range: ${year['low'].min():,.2f} – ${year['high'].max():,.2f}\n"
+        if pd.notna(latest['volume']):
+            response += f"- Volume: {int(latest['volume']):,}\n"
+        
+        chart_data = {
+            'x': year['price_date'].dt.strftime('%Y-%m-%d').tolist(),
+            'y': year['close'].round(2).tolist(),
+            'type': 'scatter',
+            'mode': 'lines',
+            'name': 'Close'
+        }
+        
+        chart_config = {
+            'title': f'{ticker} Closing Price (1 year)',
+            'xaxis': {'title': 'Date'},
+            'yaxis': {'title': 'Price ($)'}
+        }
+        
+        return response, 'line', {'data': [chart_data], 'layout': chart_config}
     
     def get_latest_metrics(self, ticker: str) -> Tuple[str, str, Dict]:
         """Get latest metrics for a company"""

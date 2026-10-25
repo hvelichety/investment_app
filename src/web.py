@@ -100,6 +100,7 @@ def get_companies():
 def get_examples():
     """Get example queries"""
     examples = [
+        "What's the TSLA stock price?",
         "Show me an overview of all companies",
         "Compare profitability across all companies",
         "Show NVDA revenue trend over time",

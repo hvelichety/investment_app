@@ -75,6 +75,7 @@ class YahooFinanceDataFetcher:
             income_stmt = stock.financials
             balance_sheet = stock.balance_sheet
             cash_flow = stock.cashflow
+            price_history = stock.history(period='max', auto_adjust=False)
             
             metrics = {
                 'ticker': ticker,
@@ -163,12 +164,25 @@ class YahooFinanceDataFetcher:
                             filing_metrics['capex'] = abs(cash_flow.loc['Capital Expenditure', date])
                     
                     # Additional info metrics
-                    filing_metrics['market_cap'] = info.get('marketCap')
                     filing_metrics['employee_count'] = info.get('fullTimeEmployees')
                     
-                    # Per-share metrics
+                    # Shares outstanding as of this fiscal year end, falling
+                    # back to today's count when the balance sheet lacks it
                     shares_outstanding = info.get('sharesOutstanding')
-                    if shares_outstanding and 'net_income' in filing_metrics:
+                    if (not balance_sheet.empty and date in balance_sheet.columns
+                            and 'Ordinary Shares Number' in balance_sheet.index
+                            and pd.notna(balance_sheet.loc['Ordinary Shares Number', date])):
+                        shares_outstanding = balance_sheet.loc['Ordinary Shares Number', date]
+                    
+                    # Market cap at fiscal year end (close on or before that date)
+                    year_end_close = self._close_on_or_before(price_history, date)
+                    if shares_outstanding and year_end_close is not None:
+                        filing_metrics['market_cap'] = year_end_close * shares_outstanding
+                    
+                    # Per-share metrics
+                    if 'Diluted EPS' in income_stmt.index and pd.notna(income_stmt.loc['Diluted EPS', date]):
+                        filing_metrics['eps'] = income_stmt.loc['Diluted EPS', date]
+                    elif shares_outstanding and 'net_income' in filing_metrics:
                         filing_metrics['eps'] = filing_metrics['net_income'] / shares_outstanding
                     
                     if shares_outstanding and 'stockholders_equity' in filing_metrics:
@@ -193,6 +207,32 @@ class YahooFinanceDataFetcher:
         except Exception as e:
             print(f"  ✗ Error: {e}")
             return {'ticker': ticker, 'error': str(e)}
+    
+    @staticmethod
+    def _close_on_or_before(history: pd.DataFrame, date) -> Optional[float]:
+        """Closing price on the last trading day on or before `date`"""
+        if history is None or history.empty:
+            return None
+        index = history.index.tz_localize(None) if history.index.tz is not None else history.index
+        closes = history['Close'][index <= pd.Timestamp(date)]
+        return float(closes.iloc[-1]) if not closes.empty else None
+    
+    def get_price_history(self, ticker: str, period: str = '5y') -> List[Dict]:
+        """Daily OHLCV rows for a ticker (split-adjusted, not dividend-adjusted)"""
+        history = yf.Ticker(ticker).history(period=period, auto_adjust=False)
+        prices = []
+        for date, row in history.iterrows():
+            if pd.isna(row['Close']):
+                continue
+            prices.append({
+                'date': date.strftime('%Y-%m-%d'),
+                'open': float(row['Open']),
+                'high': float(row['High']),
+                'low': float(row['Low']),
+                'close': float(row['Close']),
+                'volume': int(row['Volume']) if pd.notna(row['Volume']) else None,
+            })
+        return prices
     
     def get_all_companies_data(self, tickers: List[str]) -> Dict:
         """Get data for multiple companies"""

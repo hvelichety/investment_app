@@ -41,7 +41,7 @@ A comprehensive database system for collecting, parsing, and analyzing **real fi
 │   ├── USAGE.md
 │   └── SUMMARY.md
 ├── .github/workflows/
-│   └── update-data.yml       # Weekly automated data refresh
+│   └── update-data.yml       # Weekday automated data refresh
 ├── requirements.txt          # Runtime deps (web app / Vercel)
 ├── requirements-data.txt     # Data collection & dev deps
 └── vercel.json               # Vercel deployment config
@@ -68,10 +68,11 @@ The database contains **real financial metrics from Yahoo Finance** for:
 - **🗄️ Database Browser**: Browse every table/view and run read-only SQL from the web UI
 - **Real Financial Data**: Fetched from the Yahoo Finance API
 - **Comprehensive Metrics**: 22+ financial metrics tracked over 5 years
+- **Daily Stock Prices**: 5 years of daily open/high/low/close/volume per ticker (`daily_prices` table)
 - **Structured Database**: SQLite with normalized schema + convenience views
 - **Cloud Database Support**: Optional Turso (libSQL) backend for deployments
 - **Excel Export**: Export all data to Excel with multiple sheets
-- **Automated Updates**: Weekly GitHub Actions refresh (`.github/workflows/update-data.yml`)
+- **Automated Updates**: Weekday GitHub Actions refresh after US market close (`.github/workflows/update-data.yml`)
 
 ## Quick Start
 
@@ -89,6 +90,7 @@ Open your browser to **http://localhost:5000** and chat with your financial data
 - "Compare profitability across companies"
 - "Show NVDA revenue trend over time"
 - "What are the latest metrics for TSLA?"
+- "What's the TSLA stock price?"
 
 ### Option 2: Rebuild the Database with Fresh Data
 
@@ -163,7 +165,7 @@ export TURSO_AUTH_TOKEN="your-token"
 python3 scripts/migrate_to_cloud.py   # one-time (or repeat) sync
 ```
 
-The weekly GitHub Actions workflow syncs to Turso automatically when the `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` repository secrets are configured.
+The daily GitHub Actions workflow syncs to Turso automatically when the `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` repository secrets are configured.
 
 ## Automated Updates
 

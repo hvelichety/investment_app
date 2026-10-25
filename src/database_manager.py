@@ -151,6 +151,20 @@ class MetricsDatabase:
             )
         """)
         
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS daily_prices (
+                company_id INTEGER NOT NULL,
+                price_date DATE NOT NULL,
+                open REAL,
+                high REAL,
+                low REAL,
+                close REAL,
+                volume INTEGER,
+                PRIMARY KEY (company_id, price_date),
+                FOREIGN KEY (company_id) REFERENCES companies(company_id)
+            )
+        """)
+        
         self._create_views()
         
         self.conn.commit()
@@ -184,6 +198,22 @@ class MetricsDatabase:
                 JOIN companies c ON f.company_id = c.company_id
                 ORDER BY c.ticker, f.filing_date DESC
             """)
+        
+        self.cursor.execute("""
+            CREATE VIEW IF NOT EXISTS v_daily_prices AS
+            SELECT
+                c.ticker,
+                c.company_name,
+                p.price_date,
+                p.open,
+                p.high,
+                p.low,
+                p.close,
+                p.volume
+            FROM daily_prices p
+            JOIN companies c ON p.company_id = c.company_id
+            ORDER BY c.ticker, p.price_date DESC
+        """)
         
         # One wide view with everything side by side per filing
         self.cursor.execute("""
@@ -338,6 +368,31 @@ class MetricsDatabase:
         
         self.conn.commit()
     
+    def insert_prices(self, company_id: int, prices: List[Dict[str, Any]]):
+        """Insert (or replace) daily OHLCV rows for a company"""
+        self.cursor.executemany(
+            "INSERT OR REPLACE INTO daily_prices "
+            "(company_id, price_date, open, high, low, close, volume) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [
+                (company_id, p['date'], p.get('open'), p.get('high'), p.get('low'),
+                 p.get('close'), p.get('volume'))
+                for p in prices
+            ]
+        )
+        self.conn.commit()
+    
+    def get_price_history(self, ticker: str) -> pd.DataFrame:
+        """Get daily prices for a company, oldest first"""
+        query = """
+            SELECT p.price_date, p.open, p.high, p.low, p.close, p.volume
+            FROM daily_prices p
+            JOIN companies c ON p.company_id = c.company_id
+            WHERE c.ticker = ?
+            ORDER BY p.price_date
+        """
+        return pd.read_sql_query(query, self.conn, params=(ticker,))
+    
     def get_company_metrics(self, ticker: str) -> pd.DataFrame:
         """Get all metrics for a company"""
         query = """
@@ -418,6 +473,9 @@ class MetricsDatabase:
             all_metrics_df = self.get_all_companies_metrics()
             all_metrics_df.to_excel(writer, sheet_name='All_Metrics', index=False)
             
+            prices_df = pd.read_sql_query("SELECT * FROM v_daily_prices", self.conn)
+            prices_df.to_excel(writer, sheet_name='Daily_Prices', index=False)
+            
             for ticker in companies_df['ticker']:
                 company_metrics = self.get_company_metrics(ticker)
                 if not company_metrics.empty:
@@ -444,5 +502,6 @@ if __name__ == "__main__":
     print("  - operational_metrics")
     print("  - valuation_metrics")
     print("  - all_metrics")
+    print("  - daily_prices")
     
     db.close()

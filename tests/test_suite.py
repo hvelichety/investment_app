@@ -7,6 +7,8 @@ import sys
 import sqlite3
 import json
 
+import pandas as pd
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.database_manager import MetricsDatabase  # noqa: E402
@@ -30,6 +32,7 @@ def test_database_schema():
         'balance_sheet_metrics',
         'cash_flow_metrics',
         'companies',
+        'daily_prices',
         'filings',
         'margin_metrics',
         'operational_metrics',
@@ -104,6 +107,43 @@ def test_query_interface():
     return True
 
 
+def test_prices():
+    """Test storing daily prices and the chatbot price answer"""
+    print("\nTesting daily prices...")
+    
+    from src.chatbot import FinancialChatbot
+    
+    db = MetricsDatabase("test_financial_metrics.db")
+    db.connect()
+    company_id = db.insert_company("TEST", "0000000001", "Test Company Inc.")
+    dates = pd.bdate_range(end="2026-10-23", periods=300)
+    prices = [
+        {'date': d.strftime('%Y-%m-%d'), 'open': 100.0 + i, 'high': 101.0 + i,
+         'low': 99.0 + i, 'close': 100.0 + i, 'volume': 1000 + i}
+        for i, d in enumerate(dates)
+    ]
+    db.insert_prices(company_id, prices)
+    # Re-inserting the same days must replace, not duplicate
+    db.insert_prices(company_id, prices[-5:])
+    history = db.get_price_history("TEST")
+    db.close()
+    
+    if len(history) != len(prices):
+        print(f"  ✗ Expected {len(prices)} price rows, got {len(history)}")
+        return False
+    print(f"  ✓ Stored {len(history)} daily prices")
+    
+    bot = FinancialChatbot("test_financial_metrics.db")
+    result = bot.chat("What's the TEST stock price?")
+    bot.close()
+    
+    if "$399.00" not in result['response'] or result['chart_type'] != 'line':
+        print(f"  ✗ Unexpected price answer: {result['response'][:120]}")
+        return False
+    print("  ✓ Chatbot answered price question")
+    return True
+
+
 def test_export():
     """Test Excel export functionality"""
     print("\nTesting Excel export...")
@@ -157,6 +197,7 @@ if __name__ == "__main__":
     results.append(("Database Schema", test_database_schema()))
     results.append(("Data Insertion", test_data_insertion()))
     results.append(("Query Interface", test_query_interface()))
+    results.append(("Daily Prices", test_prices()))
     results.append(("Excel Export", test_export()))
     results.append(("Real Database Structure", verify_real_database()))
     
