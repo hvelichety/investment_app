@@ -162,8 +162,18 @@ Drafts a senior-analyst style memo per ticker, following the framework used in t
 1. **Sourced data** — `data/fundamentals/<TICKER>.yaml` holds quarterly segment figures and KPIs exactly as printed in company releases and SEC filings, each tied to its source. Quarters a company never printed alone (e.g. Q4 = FY − 9M) are derived in code and marked †. Segment and period totals are cross-checked on load, and `scripts/verify_sources.py` checks every figure against the cited document (CI: `Verify Fundamentals`).
 2. **Calculations in code** — `src/analysis/metrics.py` computes growth, margins, mix, TTM, valuation multiples and surprises vs estimates (‡ = third-party).
 3. **Fact pack** — `python3 scripts/build_factpack.py SPCX` renders all of the above as Markdown; it is the only input the model sees.
-4. **Analyst + CFO reviewer** — `scripts/run_analyst.py SPCX` has Claude write the memo from the fact pack and `playbooks/<TICKER>.yaml`, rejects any figure not in the fact pack, runs a CFO-style review, and revises once if needed.
+4. **Analyst + CFO reviewer** — `scripts/run_analyst.py SPCX` has Claude write the memo from the fact pack and `playbooks/<TICKER>.yaml`, rejects any figure not in the fact pack, runs a CFO-style review, and revises up to twice if needed.
 5. **Review first** — the `Analyst Memo` workflow (manual trigger, needs the `ANTHROPIC_API_KEY` secret) opens the draft as a GitHub issue. Nothing is posted to Slack automatically.
+
+### Weekly report
+
+`scripts/run_weekly.py` (workflow `Weekly Report`, Saturdays 13:00 UTC or manual) runs three agents per ticker:
+
+- **Analyst** writes the memo above, valued at Friday's close. The fact pack gains a weekly market section (`src/analysis/weekly.py`): price moves, multiples vs a week earlier, and market cap vs the playbook's peers (SPCX vs TSLA).
+- **Commentary** (`src/analysis/commentary.py`) searches the week's news and writes a short Slack draft in the channel's style, a thesis scorecard (strengthens / weakens / no new data per playbook question) and what to watch next week.
+- **Verifier** (`src/analysis/verifier.py`) checks every claim in the commentary and the memo: fact-pack figures against the fact pack, everything else against primary sources or established outlets via web search. A citation counts only if its URL actually came back from a search. If anything is contradicted or unconfirmed, the commentary is rewritten once and checked again.
+
+Each ticker's report opens as a GitHub issue with the verification table at the bottom. Nothing is posted to Slack automatically.
 
 To add a ticker: create `data/fundamentals/<TICKER>.yaml` and `playbooks/<TICKER>.yaml`, then run `python3 tests/test_analysis.py` and `python3 scripts/verify_sources.py <TICKER>`.
 

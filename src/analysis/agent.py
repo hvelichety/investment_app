@@ -7,8 +7,8 @@ Pipeline (every step is plain code except the two model calls):
      the fact pack. Anything else is an unsupported number.
   3. CFO reviewer (Claude) checks claims and reasoning against the fact pack
      and returns structured issues.
-  4. If either check finds problems, the analyst revises once with the
-     issues attached, and both checks run again on the revision.
+  4. If either check finds problems, the analyst revises with the issues
+     attached and both checks run again, up to two rounds.
 The result is a draft for human review, never posted automatically.
 """
 
@@ -32,6 +32,8 @@ Rules:
 - After each figure, cite its source key in brackets, e.g. "$14.57B [q3_2026_release]". Keep the † and ‡ markers when you quote derived or third-party figures, and say plainly that ‡ figures are third-party estimates.
 - Separate what the company reported, what is calculated from it, and your judgment.
 - No price targets and no buy or sell recommendation.
+- When a table cell has a value in the fact pack, show it; write "n/a" only where the fact pack says n/a.
+- Output only the memo itself. No notes about drafts, revisions or reviewer feedback.
 
 Structure the memo in Markdown:
 1. Headline (one sentence: what changed this quarter)
@@ -53,7 +55,7 @@ Check the memo strictly against the fact pack. Flag:
 - missing material context: a key negative in the fact pack the memo ignores
 - price targets or buy/sell calls
 
-Do not flag style preferences. Return pass only if there is nothing material to fix."""
+Do not flag style preferences. Never ask for a figure that is not in the fact pack: the analyst may not compute new numbers, so suggest wording instead. Return pass only if there is nothing material to fix."""
 
 REVIEW_SCHEMA = {
     "type": "object",
@@ -118,6 +120,67 @@ def _text(message) -> str:
     return "".join(b.text for b in message.content if b.type == "text").strip()
 
 
+WEB_SEARCH = {"type": "web_search_20260209", "name": "web_search"}
+WEB_FETCH = {"type": "web_fetch_20260209", "name": "web_fetch"}
+
+
+@dataclass
+class ToolRun:
+    final: object                 # last assistant message
+    seen_urls: set                # every URL a search or fetch actually returned
+    calls: List[tuple]            # (tool name, input) for client tool calls
+
+
+def _result_urls(block) -> set:
+    content = getattr(block, "content", None)
+    items = content if isinstance(content, list) else [content]
+    return {getattr(i, "url", None) for i in items if getattr(i, "url", None)}
+
+
+def run_tool_loop(client, system: str, prompt: str, tools: list, on_tool=None,
+                  max_tokens: int = 32000, max_rounds: int = 15) -> ToolRun:
+    """Run one task with server tools (web search / fetch) and client tools.
+
+    Server tools run on Anthropic's side; a long server-side loop stops with
+    pause_turn and is resumed by sending the conversation back. Client tool
+    calls go to on_tool(name, input) -> str. Ends when the model ends its turn.
+    """
+    messages = [{"role": "user", "content": prompt}]
+    seen, calls = set(), []
+    for _ in range(max_rounds):
+        with client.beta.messages.stream(
+            model=MODEL,
+            max_tokens=max_tokens,
+            betas=[FALLBACK_BETA],
+            fallbacks="default",
+            output_config={"effort": "high"},
+            system=system,
+            tools=tools,
+            messages=messages,
+        ) as stream:
+            message = stream.get_final_message()
+        if message.stop_reason == "refusal":
+            raise RuntimeError(f"Model declined the request: {message.stop_details}")
+        for block in message.content:
+            if block.type in ("web_search_tool_result", "web_fetch_tool_result"):
+                seen |= _result_urls(block)
+        messages.append({"role": "assistant", "content": message.content})
+
+        if message.stop_reason == "pause_turn":
+            continue
+        if message.stop_reason == "tool_use":
+            results = []
+            for block in message.content:
+                if block.type == "tool_use":
+                    calls.append((block.name, block.input))
+                    output = on_tool(block.name, block.input) if on_tool else "ok"
+                    results.append({"type": "tool_result", "tool_use_id": block.id, "content": output})
+            messages.append({"role": "user", "content": results})
+            continue
+        return ToolRun(message, seen, calls)
+    raise RuntimeError(f"Tool loop did not finish in {max_rounds} rounds")
+
+
 def _write_memo(client, user_content: str) -> str:
     with client.beta.messages.stream(
         model=MODEL,
@@ -147,7 +210,8 @@ def _review(client, factpack: str, memo: str) -> dict:
     return json.loads(_text(response))
 
 
-def run_analyst(factpack: str, playbook: dict, client: anthropic.Anthropic = None) -> MemoResult:
+def run_analyst(factpack: str, playbook: dict, client: anthropic.Anthropic = None,
+                max_revisions: int = 2) -> MemoResult:
     client = client or anthropic.Anthropic()
     brief = (
         f"<playbook>\n{yaml.safe_dump(playbook, sort_keys=False)}</playbook>\n\n"
@@ -163,20 +227,23 @@ def run_analyst(factpack: str, playbook: dict, client: anthropic.Anthropic = Non
     if not numbers and review["verdict"] == "pass":
         return MemoResult(memo, numbers, review, revised=False, history=history)
 
-    feedback = []
-    if numbers:
-        feedback.append("These figures are not in the fact pack; remove them or replace them "
-                        "with the fact pack's exact figure: " + ", ".join(numbers))
-    for issue in review["issues"]:
-        feedback.append(f'"{issue["quote"]}": {issue["problem"]} Fix: {issue["fix"]}')
-    revision_brief = (
-        f"{brief}\n\n<previous_draft>\n{memo}\n</previous_draft>\n\n"
-        "<reviewer_feedback>\n- " + "\n- ".join(feedback) + "\n</reviewer_feedback>\n\n"
-        "Rewrite the memo, fixing every point of feedback."
-    )
+    for _ in range(max_revisions):
+        feedback = []
+        if numbers:
+            feedback.append("These figures are not in the fact pack; remove them or replace them "
+                            "with the fact pack's exact figure: " + ", ".join(numbers))
+        for issue in review["issues"]:
+            feedback.append(f'"{issue["quote"]}": {issue["problem"]} Fix: {issue["fix"]}')
+        revision_brief = (
+            f"{brief}\n\n<previous_draft>\n{memo}\n</previous_draft>\n\n"
+            "<reviewer_feedback>\n- " + "\n- ".join(feedback) + "\n</reviewer_feedback>\n\n"
+            "Rewrite the memo, fixing every point of feedback."
+        )
 
-    memo = _write_memo(client, revision_brief)
-    numbers = unsupported_numbers(memo, factpack)
-    review = _review(client, factpack, memo)
-    history.append({"memo": memo, "unsupported_numbers": numbers, "review": review})
+        memo = _write_memo(client, revision_brief)
+        numbers = unsupported_numbers(memo, factpack)
+        review = _review(client, factpack, memo)
+        history.append({"memo": memo, "unsupported_numbers": numbers, "review": review})
+        if not numbers and review["verdict"] == "pass":
+            break
     return MemoResult(memo, numbers, review, revised=True, history=history)

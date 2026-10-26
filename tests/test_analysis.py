@@ -186,6 +186,142 @@ def test_agent_pipeline():
     return all(ok for ok, _ in checks)
 
 
+def test_weekly_section():
+    """Weekly market lines: price changes, multiples vs a week earlier, peer premium"""
+    print("\nTesting weekly market section...")
+    from src.analysis.weekly import weekly_section
+    fund = load_fundamentals("SPCX")
+    prices = [("2026-09-25", 120.0), ("2026-10-16", 140.0), ("2026-10-23", 148.0)]
+    text = weekly_section(fund, prices, peers={"TSLA": (400.0, 3200.0)})
+    factpack = build_factpack(fund, price=148, price_date="2026-10-23", market_section=text)
+    checks = [
+        ("1-week change: +5.7% (from $140.00 on 2026-10-16)" in text, "1-week change"),
+        ("4-week change: +23.3% (from $120.00 on 2026-09-25)" in text, "4-week change"),
+        ("EV / TTM revenue: 61.1x (a week earlier at the same fundamentals: 57.7x)" in text,
+         "multiple vs a week earlier"),
+        ("$1.28T (3,200M shares)" in text, "peer market cap"),
+        ("1.57x (+57.0% premium)" in text, "premium over peer"),
+        ("## Week ending 2026-10-23 [market_data]" in factpack and "`market_data`" in factpack,
+         "section and source in fact pack"),
+    ]
+    for ok, label in checks:
+        print(f"  {'✓' if ok else '✗'} {label}")
+    if not all(ok for ok, _ in checks):
+        print(text)
+    return all(ok for ok, _ in checks)
+
+
+class _Obj:
+    def __init__(self, **kw):
+        self.__dict__.update(kw)
+
+
+class _ToolMessages:
+    """Stands in for client.beta.messages in tool loops: scripted turns"""
+
+    def __init__(self, turns):
+        self.turns, self.requests = list(turns), []
+
+    def stream(self, **kwargs):
+        self.requests.append(kwargs)
+        stop, content = self.turns.pop(0)
+        message = _Obj(stop_reason=stop, stop_details=None, content=content)
+
+        class _Stream:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def get_final_message(self):
+                return message
+        return _Stream()
+
+
+def _client(turns):
+    from types import SimpleNamespace
+    fake = _ToolMessages(turns)
+    return SimpleNamespace(beta=SimpleNamespace(messages=fake)), fake
+
+
+def _search_result(url):
+    return _Obj(type="web_search_tool_result", content=[_Obj(type="web_search_result", url=url, title="t")])
+
+
+def test_verifier():
+    """Findings come back through the tool; unreturned URLs can't verify a claim"""
+    print("\nTesting verifier agent (stubbed model)...")
+    from src.analysis.verifier import verify_report
+    real, fake_url = "https://example.com/real", "https://example.com/made-up"
+
+    def finding(claim, status, basis, url):
+        return {"claim": claim, "status": status, "basis": basis, "source_url": url, "evidence": "e", "note": ""}
+    findings = [
+        finding("Revenue $14.57B", "verified", "fact_pack", ""),
+        finding("Lockup ends Dec 1", "verified", "secondary_source", real),
+        finding("Starship flew Oct 20", "verified", "primary_source", fake_url),
+        finding("Tesla 800 robotaxis", "contradicted", "primary_source", real),
+    ]
+    client, fake = _client([
+        ("pause_turn", [_search_result(real)]),
+        ("tool_use", [_Obj(type="tool_use", id="t1", name="record_findings", input={"findings": findings})]),
+        ("end_turn", [_Obj(type="text", text="Done.")]),
+    ])
+    check = verify_report("report", "factpack", client, extra_figures=["800"])
+    statuses = [f["status"] for f in check.findings]
+    tool_results = [m["content"][0] for m in fake.requests[-1]["messages"]
+                    if m["role"] == "user" and isinstance(m["content"], list)]
+    checks = [
+        (statuses == ["verified", "verified", "unverified", "contradicted"], "made-up URL downgraded"),
+        (len(fake.requests) == 3, "pause_turn resumed and tool result sent"),
+        (tool_results and tool_results[0]["tool_use_id"] == "t1", "tool result answers the call"),
+        ("800" in fake.requests[0]["messages"][0]["content"], "unsupported figures passed to verifier"),
+        (len(check.problems) == 2 and not check.clean, "problems counted"),
+    ]
+    for ok, label in checks:
+        print(f"  {'✓' if ok else '✗'} {label}")
+    return all(ok for ok, _ in checks)
+
+
+def test_commentary():
+    """Commentary comes back structured; news with unreturned URLs is dropped"""
+    print("\nTesting commentary agent (stubbed model)...")
+    from src.analysis.commentary import write_commentary
+    real = "https://example.com/news"
+    submitted = {
+        "slack_post": "*SpaceX week ending Oct 23*\n• Close $148.00",
+        "scorecard": [{"question": "Is Starlink compounding?", "direction": "no_new_data", "evidence": "No release."}],
+        "watch_next": ["Lockup expiry"],
+        "news": [
+            {"headline": "Real", "outlet": "Reuters", "date": "2026-10-22", "url": real},
+            {"headline": "Invented", "outlet": "Blog", "date": "2026-10-22", "url": "https://example.com/nope"},
+        ],
+    }
+    client, fake = _client([
+        ("tool_use", [_search_result(real),
+                      _Obj(type="tool_use", id="c1", name="submit_commentary", input=submitted)]),
+        ("end_turn", []),
+    ])
+    c = write_commentary("factpack", "memo", {"ticker": "SPCX"}, "2026-10-23", client)
+    revision_client, revision = _client([
+        ("tool_use", [_Obj(type="tool_use", id="c2", name="submit_commentary", input=dict(submitted, news=c.news))]),
+        ("end_turn", []),
+    ])
+    c2 = write_commentary("factpack", "memo", {"ticker": "SPCX"}, "2026-10-23", revision_client,
+                          feedback=["“x” (unverified): not found"], previous=c)
+    checks = [
+        ([n["headline"] for n in c.news] == ["Real"], "news with a returned URL kept"),
+        ([n["headline"] for n in c.dropped_news] == ["Invented"], "news with an unreturned URL dropped"),
+        ("Close $148.00" in c.text() and "Lockup expiry" in c.text(), "text covers post and watch list"),
+        ("not found" in revision.requests[0]["messages"][0]["content"], "fact-check feedback in revision"),
+        ([n["headline"] for n in c2.news] == ["Real"], "revision keeps already-checked news"),
+    ]
+    for ok, label in checks:
+        print(f"  {'✓' if ok else '✗'} {label}")
+    return all(ok for ok, _ in checks)
+
+
 if __name__ == "__main__":
     print("=" * 60)
     print("ANALYST DATA LAYER - TEST SUITE")
@@ -197,6 +333,9 @@ if __name__ == "__main__":
         ("Surprises and growth", test_surprises_and_growth()),
         ("Fact pack", test_factpack()),
         ("Agent pipeline", test_agent_pipeline()),
+        ("Weekly section", test_weekly_section()),
+        ("Verifier agent", test_verifier()),
+        ("Commentary agent", test_commentary()),
     ]
     print("\n" + "=" * 60)
     for name, passed in results:
