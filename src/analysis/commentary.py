@@ -22,7 +22,9 @@ Write in the channel's style:
 - 3 to 6 bullets, each one fact with its number and its comparison (actual vs estimate, this week vs last, us vs peer)
 - one or two lines on what it means for the thesis, labeled as view, not fact
 - the next catalyst and its date when known
-Plain and specific. No hype, no price targets, no buy or sell calls. Slack formatting: *bold*, • bullets, no Markdown headings.
+Plain and specific. No hype, no price targets of your own, no buy or sell calls. When the fact pack has a valuation band, report where the price sits in it and what the channel's method does in that zone (scale in near the low end, reduce exposure near the high end), labeled as the channel's method. Slack formatting: *bold*, • bullets, no Markdown headings.
+
+Follow the channel methodology you are given; it is how this channel analyzes every stock.
 
 Numbers:
 - Use figures from the fact pack exactly as written (same rounding and units) and keep † and ‡ markers.
@@ -98,12 +100,14 @@ class Commentary:
 
 
 def write_commentary(factpack: str, memo: str, playbook: dict, week_ending: str, client,
-                     feedback: Optional[List[str]] = None, previous: Optional["Commentary"] = None) -> Commentary:
+                     feedback: Optional[List[str]] = None, previous: Optional["Commentary"] = None,
+                     methodology: str = "") -> Commentary:
     prompt = (
         f"Week ending {week_ending}. Cover the 7 days up to that date.\n\n"
-        f"<playbook>\n{yaml.safe_dump(playbook, sort_keys=False)}</playbook>\n\n"
+        + (f"<methodology>\n{methodology}\n</methodology>\n\n" if methodology else "")
+        + f"<playbook>\n{yaml.safe_dump(playbook, sort_keys=False)}</playbook>\n\n"
         f"<fact_pack>\n{factpack}\n</fact_pack>\n\n"
-        f"<analyst_memo>\n{memo}\n</analyst_memo>\n\n"
+        + (f"<analyst_memo>\n{memo}\n</analyst_memo>\n\n" if memo else "")
     )
     if feedback and previous:
         prompt += (

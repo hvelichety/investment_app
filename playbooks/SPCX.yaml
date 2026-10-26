@@ -7,6 +7,14 @@
 
 ticker: SPCX
 slack_channel: C0BKZKYD4JD   # #stock-spcx
+methodology_author: U09USSY3TNZ   # Pei Ng; new posts feed the weekly method review
+
+# Price tools from docs/METHODOLOGY.md. No valuation band yet: the channel
+# hasn't set an EV / revenue range for SpaceX.
+method:
+  relative_performance:
+    benchmarks: ["^GSPC", "^IXIC"]
+    since: 2026-10-13   # started averaging into positions (#stock-spcx)
 
 thesis_questions:
   - Is Connectivity (Starlink) compounding? Subscriber growth, ARPU trend, and whether revenue growth is volume- or price-led.

@@ -1,0 +1,47 @@
+# Analyst playbook for NVIDIA (NVDA).
+#
+# No sourced quarterly data file yet, so the weekly report is price-based.
+# Framework follows the analysis in #stock-nvda (docs/METHODOLOGY.md).
+
+ticker: NVDA
+slack_channel: C0A22A0D281   # #stock-nvda
+methodology_author: U09USSY3TNZ
+
+method:
+  valuation_band:
+    basis: eps
+    periods: ["0y", "+1y"]
+    multiple: {low: 30, high: 60}   # "131 @30x to 262 @60x" (2025-12-07)
+    zones: {low: 25, high: 75}
+    horizon: 2026-12-31
+  relative_performance:
+    benchmarks: ["^GSPC", "^IXIC"]
+    since: 2026-01-02
+
+relative:
+  - ticker: AMD
+    why: Named competitor (#stock-nvda); compare market cap and momentum.
+
+thesis_questions:
+  - Is Data Center still carrying growth, and is its share of revenue rising or plateauing?
+  - Where is the price in the 30x to 60x band on analyst earnings, and are estimates rising?
+  - Is competition (AMD, custom chips at GOOG, AMZN, MSFT) or China policy showing up in guidance?
+
+kpis:
+  - Data Center revenue and share of total
+  - quarterly revenue vs guidance
+  - analyst EPS estimate revisions
+
+leading_indicators:
+  - Hyperscaler capex guidance leads Data Center revenue.
+  - Export-control changes lead China revenue.
+
+events_to_watch:
+  - Quarterly earnings and next-quarter guidance.
+  - Hyperscaler earnings (capex commentary).
+
+style:
+  audience: Experienced investors in the channel; write like a senior equity analyst reporting to a CFO.
+  rules:
+    - Every number must appear in the fact pack or a cited news item; mark third-party estimates (‡).
+    - Describe the band zone and what the channel's method does in that zone; no buy/sell calls of your own.

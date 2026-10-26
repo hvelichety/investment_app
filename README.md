@@ -175,6 +175,10 @@ Drafts a senior-analyst style memo per ticker, following the framework used in t
 
 Each ticker's report opens as a GitHub issue with the verification table at the bottom. Nothing is posted to Slack automatically.
 
+The agents follow the channel's method, written down in [docs/METHODOLOGY.md](docs/METHODOLOGY.md): projections bridged to actuals, a valuation band (analyst estimate range × the playbook's multiple range, with where the price sits in it), leading indicators per thesis, performance vs the S&P 500 / Nasdaq since a decision date, and comparables. Tickers without a sourced data file (RH, NVDA, TSLA for now) get a price-based report: band, relative performance, peers and the week's news, with no quarterly memo.
+
+**Learning from new posts.** With a `SLACK_BOT_TOKEN` secret (a Slack app with `channels:history`, `groups:history` and `files:read`, invited to the `#stock-*` channels), the weekly run also reads the methodology author's posts and charts from the past week. A method-review agent (`src/analysis/method.py`) decides whether they change the method (a new KPI, multiple range, decision date or comparable) and, if so, the revised playbooks open as a pull request. Merging it is the approval. The figures in the posts are fact-checked and shown in the report.
+
 To add a ticker: create `data/fundamentals/<TICKER>.yaml` and `playbooks/<TICKER>.yaml`, then run `python3 tests/test_analysis.py` and `python3 scripts/verify_sources.py <TICKER>`.
 
 ## Cloud Database (Turso)
