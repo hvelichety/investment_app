@@ -11,7 +11,8 @@ methodology_author: U09USSY3TNZ
 method:
   valuation_band:
     basis: eps
-    periods: ["0y", "+1y"]
+    estimate: avg   # consensus average EPS × each multiple, as in the RH P/E range chart (2026-10-22)
+    periods: ["0y", "+1y"]   # FY2026E (Jan 2027) and FY2027E (Jan 2028), shown with the current P/E on each (2026-10-22)
     multiple: {low: 20, high: 30}   # "projected 20x to 30x earnings multiple" (2026-08-08)
     zones: {low: 25, high: 75}
     horizon: 2026-12-31
@@ -27,6 +28,11 @@ thesis_questions:
 kpis:
   - gross and operating margin (tariff impact)
   - analyst EPS estimate revisions (low / avg / high)
+  - price 5 business days after each earnings report vs that year's band (history in the P/E range chart, 2026-10-22)
+
+decisions:   # position actions taken under the band method, for context in later reports
+  - 2026-10-07: scaled into full allocation at ~117, near the low end of the band
+  - 2026-10-22: reduced risk by 50% at 138; letting the rest run toward 150 to 160 (FY2026E high end) by 12/31
 
 leading_indicators:
   - Tariff policy changes lead margin changes.

@@ -328,21 +328,33 @@ def test_band_and_relative():
     from src.analysis.band import band_lines, relative_lines, valuation_band, zone
     from src.analysis.factpack import build_market_factpack
     from src.analysis.weekly import weekly_section
-    band = valuation_band({"low": 5.0, "avg": 6.0, "high": 7.0, "analysts": 20}, "0y", "eps", 20, 30)
-    lines = "\n".join(band_lines([band], 138.0, "market_data"))
+    # RH P/E range chart in #stock-rh (Oct 22): consensus EPS FY26E $5.36, FY27E $8.52, 20x / 30x
+    band = valuation_band({"low": 4.9, "avg": 5.36, "high": 5.9, "analysts": 12}, "0y", "eps", 20, 30)
+    band27 = valuation_band({"low": 7.5, "avg": 8.52, "high": 9.6}, "+1y", "eps", 20, 30)
+    lines = "\n".join(band_lines([band, band27], 138.03, "market_data"))
     rel = relative_lines("RH", [("2026-10-07", 120.0), ("2026-10-22", 137.88)],
                          {"^GSPC": [("2026-10-07", 6000.0), ("2026-10-22", 5922.0)]}, "2026-10-07")
     market = weekly_section(None, [("2026-10-15", 130.0), ("2026-10-22", 138.0)], ticker="RH",
                             extra_lines=rel, shares_m=18.7, peers={"WSM": (200.0, 125.0)})
     pack = build_market_factpack("RH", market)
+    from src.analysis.band import acquisition_lines
+    acq = acquisition_lines("TSLA", 400.0, 3500.0, "SPCX", 2_100_000.0, cap_note="test")
     checks = [
-        ((band.low, band.mid, band.high) == (100.0, 150.0, 210.0), "band low / mid / high"),
-        ((band.consensus_low, band.consensus_high) == (120.0, 180.0), "band on the average estimate"),
-        (abs(band.position(138.0) - 38 / 110 * 100) < 1e-9 and zone(34.5) == "mid band", "position in band"),
+        ("gap $700.00B, $200.00 per TSLA share" in acq[0], "acquisition gap per target share"),
+        ("25% line: $450.00" in acq[1] and "50% line: $500.00" in acq[2], "acquisition reference lines"),
+        (round(band.consensus_low, 2) == 107.2 and round(band.consensus_high, 2) == 160.8
+         and round(band27.consensus_low, 2) == 170.4 and round(band27.consensus_high, 2) == 255.6,
+         "band on the average estimate matches the channel's chart"),
+        ((round(band.low, 2), round(band.high, 2)) == (98.0, 177.0), "full estimate range"),
+        (abs(band.position(138.03) - (138.03 - 107.2) / 53.6 * 100) < 1e-9, "position on the average-estimate band"),
         (zone(10) == "near the low end" and zone(80) == "near the high end" and zone(120) == "above the band",
          "zones"),
-        ("EPS $5.00 – $7.00‡ (avg $6.00‡, 20 analysts) × 20x – 30x P/E" in lines, "band estimate line"),
-        ("sits at 35% of the band: mid band" in lines, "band position line"),
+        ("EPS avg $5.36‡ (range $4.90 – $5.90‡, 12 analysts) × 20x – 30x P/E" in lines, "band estimate line"),
+        ("Band: $107.20 – $160.80 (full estimate range: $98.00 – $177.00)" in lines, "band line"),
+        ("Current P/E on the average estimate: 25.8x" in lines
+         and "Current P/E on the average estimate: 16.2x" in lines, "current P/E matches the chart"),
+        ("sits at 58% of the band: mid band" in lines and "sits at -38% of the band: below the band" in lines,
+         "band position lines"),
         ("vs S&P 500: +16.2 pts (RH +14.9%, S&P 500 -1.3%)" in rel[1], "relative performance in channel form"),
         ("RH market cap: $2.58B (18.7M shares)" in market and "0.10x (89.7% discount)" in market,
          "market-only peer gap"),

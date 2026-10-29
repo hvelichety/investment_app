@@ -22,12 +22,16 @@ The core tool. A stock's fair range is
 
     analyst projection range × historical multiple range
 
-- Profitable companies: forward EPS (low to high analyst estimate) × a P/E
-  range taken from the stock's own history (RH: 20x to 30x; NVDA: 30x to 60x).
+- Profitable companies: consensus average forward EPS for this fiscal year
+  and next × a P/E range taken from the stock's own history (RH: 20x to
+  30x; NVDA: 30x to 60x), alongside the current P/E on each year's estimate
+  (RH chart, Oct 22: $5.36 FY26E and $8.52 FY27E → $107 to $161 and $170
+  to $256; current 25.8x and 16.2x). The estimate source is named.
 - Companies valued on revenue (SpaceX): revenue projections × EV / revenue,
   also EV / trailing and EV / run-rate revenue.
 - The band is projected to a horizon date (year-end), and the price is
-  plotted inside it over time, including post-earnings moves.
+  plotted against it over time, using the price 5 business days after each
+  earnings report as the historical marker.
 
 Where the price sits in the band drives position sizing, not a buy/sell call:
 
@@ -63,6 +67,11 @@ Value business segments against market references for similar companies
 (SpaceX's AI segment vs OpenAI's private valuation), and track relative
 premiums between related stocks (SpaceX vs Tesla market cap for the merger
 thesis).
+
+Acquisition reference price (Tesla chart, Oct 26): the gap between the
+acquirer's market value and the target's market cap, spread over the
+target's diluted shares; reference lines at the target's price plus 25% and
+50% of that gap per share, tracked weekly since the acquirer's IPO.
 
 ## 6. Events
 

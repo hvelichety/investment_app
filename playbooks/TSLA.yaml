@@ -12,6 +12,12 @@ method:
   relative_performance:
     benchmarks: ["^GSPC", "^IXIC"]
     since: 2026-10-14   # robotaxi fleet update baseline (#stock-tsla)
+  # "Acquisition reference price metering" chart (2026-10-26): Tesla close plus 25% / 50% of the
+  # SPCX-minus-Tesla market value gap per Tesla diluted share, weekly closes since the SPCX IPO (2026-06-12)
+  acquisition_reference:
+    acquirer: SPCX
+    target_diluted_shares_m: 3541   # Tesla diluted shares used in the chart
+    gap_shares: [0.25, 0.5]
 
 relative:
   - ticker: SPCX
@@ -21,7 +27,7 @@ thesis_questions:
   - Is Tesla's robotaxi fleet closing the gap with Waymo? Use registered vs active counts and say which is which (Texas DMV registry, company claims).
   - Is FSD adoption and use growing (subscriptions, self-driving share of miles)?
   - Is cost per mile falling toward the level that undercuts Uber?
-  - Does the SpaceX vs Tesla market-cap gap support the merger-premium thesis?
+  - Does the SpaceX vs Tesla market-cap gap support the merger-premium thesis? Where is Tesla vs the 25% and 50% acquisition reference lines?
 
 kpis:
   - robotaxis registered and active (Tesla vs Waymo)
