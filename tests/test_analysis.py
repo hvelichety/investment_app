@@ -403,6 +403,39 @@ def test_method_review():
     return all(ok for ok, _ in checks)
 
 
+def test_recorded_estimates():
+    """Recorded stockanalysis.com estimates are used while fresh and labeled in the band"""
+    print("\n[Recorded estimates]")
+    import importlib.util
+    import tempfile
+    from datetime import date
+    from pathlib import Path
+    from src.analysis.band import band_lines, valuation_band
+    spec = importlib.util.spec_from_file_location("run_weekly", Path(__file__).resolve().parents[1] / "scripts" / "run_weekly.py")
+    rw = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rw)
+    with tempfile.TemporaryDirectory() as d:
+        rw.ESTIMATES_DIR = Path(d)
+        (Path(d) / "RH.yaml").write_text(
+            "source: stockanalysis.com\nrecorded: 2026-10-29\nsite_updated: 2026-10-20\n"
+            "eps:\n  0y: {low: 4.10, avg: 5.30, high: 7.07, analysts: 19}\n")
+        fresh = rw.recorded_estimates("RH", "eps", today=date(2026, 10, 31))
+        stale = rw.recorded_estimates("RH", "eps", today=date(2026, 11, 20))
+        missing = rw.recorded_estimates("NVDA", "eps", today=date(2026, 10, 31))
+    band = valuation_band(fresh["0y"], "0y", "eps", 20, 30)
+    text = "\n".join(band_lines([band], 138.03, "mkt"))
+    checks = [
+        (fresh["0y"]["avg"] == 5.30 and fresh["0y"]["source"] == "stockanalysis.com, updated 2026-10-20",
+         "fresh file used with its source"),
+        (stale == {} and missing == {}, "stale or missing file falls back to Yahoo"),
+        ("$106.00 – $159.00" in text and "19 analysts; stockanalysis.com, updated 2026-10-20" in text,
+         "band built on $5.30 and labeled with the source"),
+    ]
+    for ok, label in checks:
+        print(f"  {'✓' if ok else '✗'} {label}")
+    return all(ok for ok, _ in checks)
+
+
 if __name__ == "__main__":
     print("=" * 60)
     print("ANALYST DATA LAYER - TEST SUITE")
@@ -419,6 +452,7 @@ if __name__ == "__main__":
         ("Commentary agent", test_commentary()),
         ("Band and relative", test_band_and_relative()),
         ("Method review", test_method_review()),
+        ("Recorded estimates", test_recorded_estimates()),
     ]
     print("\n" + "=" * 60)
     for name, passed in results:

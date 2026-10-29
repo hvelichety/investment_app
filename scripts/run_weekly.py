@@ -28,6 +28,8 @@ import json
 import os
 import sys
 from dataclasses import asdict
+from datetime import date
+from pathlib import Path
 
 import yaml
 
@@ -84,8 +86,44 @@ def peer_quote(ticker: str, day: str):
     return closes[-1][1], shares
 
 
+ESTIMATES_DIR = Path(ROOT_DIR) / "data" / "estimates"
+ESTIMATES_MAX_AGE_DAYS = 14
+
+
+def recorded_estimates(ticker: str, basis: str, today: date = None):
+    """Estimates recorded from stockanalysis.com by the Friday method review, if fresh.
+
+    The site's terms bar scripts and scrapers, so this script never fetches it;
+    the review (an AI agent that follows robots.txt) records the figures in
+    data/estimates/<TICKER>.yaml with the page's update date.
+    """
+    path = ESTIMATES_DIR / f"{ticker}.yaml"
+    if not path.exists():
+        return {}
+    data = yaml.safe_load(path.read_text()) or {}
+    recorded = data.get("recorded")
+    if not recorded or ((today or date.today()) - recorded).days > ESTIMATES_MAX_AGE_DAYS:
+        print(f"  ! {path.name} estimates are stale (recorded {recorded}); using Yahoo", file=sys.stderr)
+        return {}
+    note = f"{data['source']}, updated {data.get('site_updated', recorded)}"
+    return {str(period): dict(row, source=note) for period, row in (data.get(basis) or {}).items()}
+
+
 def analyst_estimates(ticker: str, basis: str):
-    """period ("0y", "+1y", ...) -> {"low", "avg", "high", "analysts"}; revenue in $M"""
+    """period ("0y", "+1y", ...) -> {"low", "avg", "high", "analysts", "source"}; revenue in $M
+
+    Recorded stockanalysis.com figures (the channel's source) win; Yahoo fills the other periods.
+    """
+    try:
+        estimates = yahoo_estimates(ticker, basis)
+    except Exception as e:
+        print(f"  ! Yahoo estimates unavailable for {ticker}: {e}", file=sys.stderr)
+        estimates = {}
+    estimates.update(recorded_estimates(ticker, basis))
+    return estimates
+
+
+def yahoo_estimates(ticker: str, basis: str):
     import yfinance as yf
     t = yf.Ticker(ticker)
     table = t.earnings_estimate if basis == "eps" else t.revenue_estimate
@@ -98,6 +136,7 @@ def analyst_estimates(ticker: str, basis: str):
             "low": float(row["low"]) / scale, "avg": float(row["avg"]) / scale,
             "high": float(row["high"]) / scale,
             "analysts": int(row["numberOfAnalysts"]) if row.get("numberOfAnalysts") == row.get("numberOfAnalysts") else None,
+            "source": "Yahoo Finance",
         }
     return estimates
 

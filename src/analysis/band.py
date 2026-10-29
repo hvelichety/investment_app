@@ -35,6 +35,7 @@ class Band:
     high: float                # high estimate × high multiple
     consensus_low: float       # average estimate × low multiple
     consensus_high: float      # average estimate × high multiple
+    source: str = ""           # where the estimates came from, e.g. "stockanalysis.com, updated 2026-10-20"
 
     def position(self, price: float, on: str = "avg") -> float:
         """0 at the low end, 100 at the high end; can fall outside 0..100.
@@ -72,6 +73,7 @@ def valuation_band(estimate: Dict[str, float], period: str, basis: str, multiple
         high=price(estimate["high"], multiple_high),
         consensus_low=price(estimate["avg"], multiple_low),
         consensus_high=price(estimate["avg"], multiple_high),
+        source=estimate.get("source", ""),
     )
 
 
@@ -96,6 +98,7 @@ def band_lines(bands: List[Band], price: float, source_key: str, zones: Tuple[fl
              "Position: 0% = low end of the band, 100% = high end.", ""]
     for b in bands:
         analysts = f", {b.analysts} analysts" if b.analysts else ""
+        analysts += f"; {b.source}" if b.source else ""
         if b.basis == "eps":
             est = (f"EPS avg ${b.estimate_avg:,.2f}‡ (range ${b.estimate_low:,.2f} – "
                    f"${b.estimate_high:,.2f}‡{analysts})")
