@@ -36,7 +36,7 @@ sys.path.insert(0, ROOT_DIR)
 
 from src.analysis import metrics  # noqa: E402
 from src.analysis.agent import run_analyst, unsupported_numbers  # noqa: E402
-from src.analysis.band import band_lines, relative_lines, valuation_band  # noqa: E402
+from src.analysis.band import acquisition_lines, band_lines, relative_lines, valuation_band  # noqa: E402
 from src.analysis.commentary import write_commentary  # noqa: E402
 from src.analysis.factpack import build_factpack, build_market_factpack  # noqa: E402
 from src.analysis.fundamentals import load_fundamentals  # noqa: E402
@@ -131,10 +131,32 @@ def market_lines(ticker, playbook, prices, fund):
                      for p in cfg.get("periods", ["0y"]) if p in estimates]
             zones = cfg.get("zones") or {}
             if bands:
-                band_section = band_lines(bands, close, MARKET_SOURCE, (zones.get("low", 25), zones.get("high", 75)))
+                band_section = band_lines(bands, close, MARKET_SOURCE, (zones.get("low", 25), zones.get("high", 75)),
+                                          on=cfg.get("estimate", "avg"))
         except Exception as e:
             print(f"  ! valuation band unavailable for {ticker}: {e}", file=sys.stderr)
+    acq = method.get("acquisition_reference")
+    if acq:
+        try:
+            extra += acquisition_reference(ticker, close, prices[-1][0], acq)
+        except Exception as e:
+            print(f"  ! acquisition reference unavailable for {ticker}: {e}", file=sys.stderr)
     return extra, band_section
+
+
+def acquisition_reference(ticker, close, day, cfg):
+    """Reference prices for the target if the playbook's acquirer buys it (METHODOLOGY.md §5)"""
+    acquirer = cfg["acquirer"]
+    acq_close, acq_shares = peer_quote(acquirer, day)
+    note = f"{acq_shares:,.0f}M shares, market data"
+    if has_fundamentals(acquirer):
+        # Prefer the share count from the acquirer's latest sourced balance sheet
+        v = metrics.valuation(load_fundamentals(acquirer), acq_close, day)
+        acq_shares = v.shares_m
+        note = f"{acq_shares:,.0f}M shares per balance sheet {v.balance_sheet_date}"
+    return acquisition_lines(ticker, close, float(cfg["target_diluted_shares_m"]), acquirer,
+                             acq_close * acq_shares, tuple(cfg.get("gap_shares", (0.25, 0.5))),
+                             cap_note=f"${acq_close:,.2f} × {note}")
 
 
 def _feedback(problems):

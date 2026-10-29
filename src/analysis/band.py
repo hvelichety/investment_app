@@ -36,9 +36,14 @@ class Band:
     consensus_low: float       # average estimate × low multiple
     consensus_high: float      # average estimate × high multiple
 
-    def position(self, price: float) -> float:
-        """0 at the low end, 100 at the high end; can fall outside 0..100"""
-        return (price - self.low) / (self.high - self.low) * 100
+    def position(self, price: float, on: str = "avg") -> float:
+        """0 at the low end, 100 at the high end; can fall outside 0..100.
+
+        on="avg": the band on the average estimate (the channel's charts);
+        on="range": low estimate × low multiple to high estimate × high multiple.
+        """
+        low, high = (self.consensus_low, self.consensus_high) if on == "avg" else (self.low, self.high)
+        return (price - low) / (high - low) * 100
 
 
 def _to_price(value: float, basis: str, net_cash_m: Optional[float], shares_m: Optional[float]) -> float:
@@ -82,27 +87,58 @@ def zone(position: float, low_zone: float = 25, high_zone: float = 75) -> str:
     return "mid band"
 
 
-def band_lines(bands: List[Band], price: float, source_key: str, zones: Tuple[float, float] = (25, 75)) -> List[str]:
+def band_lines(bands: List[Band], price: float, source_key: str, zones: Tuple[float, float] = (25, 75),
+               on: str = "avg") -> List[str]:
+    basis_note = ("the average analyst estimate × the multiple range" if on == "avg"
+                  else "low estimate × low multiple to high estimate × high multiple")
     lines = [f"## Valuation band [{source_key}]", "",
-             "Analyst estimates are third-party (‡); multiples come from the playbook. "
+             f"Band = {basis_note}. Analyst estimates are third-party (‡); multiples come from the playbook. "
              "Position: 0% = low end of the band, 100% = high end.", ""]
     for b in bands:
+        analysts = f", {b.analysts} analysts" if b.analysts else ""
         if b.basis == "eps":
-            est = f"EPS ${b.estimate_low:,.2f} – ${b.estimate_high:,.2f}‡ (avg ${b.estimate_avg:,.2f}‡"
+            est = (f"EPS avg ${b.estimate_avg:,.2f}‡ (range ${b.estimate_low:,.2f} – "
+                   f"${b.estimate_high:,.2f}‡{analysts})")
             mult = f"{b.multiple_low:g}x – {b.multiple_high:g}x P/E"
         else:
-            est = (f"revenue {_money(b.estimate_low)} – {_money(b.estimate_high)}‡ "
-                   f"(avg {_money(b.estimate_avg)}‡")
+            est = (f"revenue avg {_money(b.estimate_avg)}‡ (range {_money(b.estimate_low)} – "
+                   f"{_money(b.estimate_high)}‡{analysts})")
             mult = f"{b.multiple_low:g}x – {b.multiple_high:g}x EV / revenue"
-        est += f", {b.analysts} analysts)" if b.analysts else ")"
-        pos = b.position(price)
+        main, alt = ((b.consensus_low, b.consensus_high), (b.low, b.high)) if on == "avg" \
+            else ((b.low, b.high), (b.consensus_low, b.consensus_high))
+        alt_label = "full estimate range" if on == "avg" else "on the average estimate"
+        pos = b.position(price, on)
         lines += [
             f"- {PERIOD_LABELS.get(b.period, b.period)}: {est} × {mult}",
-            f"  - Band: ${b.low:,.2f} – ${b.high:,.2f} (mid ${b.mid:,.2f}); "
-            f"on the average estimate: ${b.consensus_low:,.2f} – ${b.consensus_high:,.2f}",
-            f"  - Price ${price:,.2f} sits at {pos:.0f}% of the band: {zone(pos, *zones)}",
+            f"  - Band: ${main[0]:,.2f} – ${main[1]:,.2f} ({alt_label}: ${alt[0]:,.2f} – ${alt[1]:,.2f})",
         ]
+        if b.basis == "eps" and b.estimate_avg > 0:
+            lines.append(f"  - Current P/E on the average estimate: {price / b.estimate_avg:.1f}x")
+        lines.append(f"  - Price ${price:,.2f} sits at {pos:.0f}% of the band: {zone(pos, *zones)}")
     lines.append("")
+    return lines
+
+
+def acquisition_lines(target: str, target_close: float, target_diluted_shares_m: float,
+                      acquirer: str, acquirer_cap_m: float, fractions=(0.25, 0.5),
+                      cap_note: str = "") -> List[str]:
+    """Reference prices if the acquirer pays the target's price plus a share of the valuation gap.
+
+    gap = acquirer market value − target market cap, spread over the target's
+    diluted shares; each line = target close + fraction × gap per share.
+    """
+    target_cap = target_close * target_diluted_shares_m
+    gap = acquirer_cap_m - target_cap
+    per_share = gap / target_diluted_shares_m
+    lines = [
+        f"- Acquisition reference ({acquirer} acquiring {target}): {acquirer} market value {_money(acquirer_cap_m)}"
+        + (f" ({cap_note})" if cap_note else "")
+        + f" vs {target} {_money(target_cap)} ({target_diluted_shares_m:,.0f}M diluted shares); "
+        f"gap {_money(gap)}, ${per_share:,.2f} per {target} share",
+    ]
+    for f in fractions:
+        lines.append(f"  - {f:.0%} line: ${target_close + f * per_share:,.2f} "
+                     f"({target} close + {f:.0%} of the gap per share)")
     return lines
 
 
