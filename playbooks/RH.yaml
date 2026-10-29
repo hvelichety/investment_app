@@ -1,0 +1,44 @@
+# Analyst playbook for RH.
+#
+# No sourced quarterly data file yet, so the weekly report is price-based:
+# valuation band, relative performance, and the week's news.
+# Framework follows the analysis in #stock-rh (docs/METHODOLOGY.md).
+
+ticker: RH
+slack_channel: C0A22TTJSN5   # #stock-rh
+methodology_author: U09USSY3TNZ
+
+method:
+  valuation_band:
+    basis: eps
+    periods: ["0y", "+1y"]
+    multiple: {low: 20, high: 30}   # "projected 20x to 30x earnings multiple" (2026-08-08)
+    zones: {low: 25, high: 75}
+    horizon: 2026-12-31
+  relative_performance:
+    benchmarks: ["^GSPC", "^IXIC"]
+    since: 2026-10-07   # scaled into full allocation at ~117 (#stock-rh)
+
+thesis_questions:
+  - Is the price near the low or high end of the 20x to 30x band on analyst earnings, and has the band itself moved (estimate revisions)?
+  - Are margins recovering from the tariff hit, or are projected earnings being impaired? The band only holds if earnings estimates hold.
+  - Is RH outperforming the S&P 500 and Nasdaq since the Oct 7 entry, and is that RH-specific or market-wide?
+
+kpis:
+  - gross and operating margin (tariff impact)
+  - analyst EPS estimate revisions (low / avg / high)
+
+leading_indicators:
+  - Tariff policy changes lead margin changes.
+  - Estimate revisions lead moves in the valuation band.
+
+events_to_watch:
+  - Quarterly earnings (post-earnings moves are tracked against the band).
+  - Tariff announcements affecting furniture imports.
+
+style:
+  audience: Experienced investors in the channel; write like a senior equity analyst reporting to a CFO.
+  rules:
+    - Lead with where the price sits in the band and what moved it.
+    - Every number must appear in the fact pack or a cited news item; mark third-party estimates (‡).
+    - Describe the band zone and what the channel's method does in that zone; no buy/sell calls of your own.

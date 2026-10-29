@@ -1,0 +1,44 @@
+# Analyst playbook for Tesla (TSLA).
+#
+# No sourced quarterly data file yet, so the weekly report is price-based,
+# plus the week's robotaxi and FSD news.
+# Framework follows the analysis in #stock-tsla (docs/METHODOLOGY.md).
+
+ticker: TSLA
+slack_channel: C0A1L0DJE9K   # #stock-tsla
+methodology_author: U09USSY3TNZ
+
+method:
+  relative_performance:
+    benchmarks: ["^GSPC", "^IXIC"]
+    since: 2026-10-14   # robotaxi fleet update baseline (#stock-tsla)
+
+relative:
+  - ticker: SPCX
+    why: Merger thesis; SpaceX would likely pay a premium to where Tesla trades.
+
+thesis_questions:
+  - Is Tesla's robotaxi fleet closing the gap with Waymo? Use registered vs active counts and say which is which (Texas DMV registry, company claims).
+  - Is FSD adoption and use growing (subscriptions, self-driving share of miles)?
+  - Is cost per mile falling toward the level that undercuts Uber?
+  - Does the SpaceX vs Tesla market-cap gap support the merger-premium thesis?
+
+kpis:
+  - robotaxis registered and active (Tesla vs Waymo)
+  - FSD subscriptions and utilization
+  - cost per mile vs Uber
+
+leading_indicators:
+  - Registry counts lead reported fleet size.
+  - Unsupervised robotaxi rollout by city leads revenue from the network.
+
+events_to_watch:
+  - Quarterly earnings and robotaxi updates.
+  - Product events (Cybercab, Roadster, Optimus).
+  - Any SpaceX and Tesla merger news.
+
+style:
+  audience: Experienced investors in the channel; write like a senior equity analyst reporting to a CFO.
+  rules:
+    - Every number must appear in the fact pack or a cited news item; distinguish company claims from registry data.
+    - No price targets or buy/sell calls.

@@ -191,3 +191,20 @@ def build_factpack(fund: Fundamentals, price: Optional[float] = None, price_date
         lines.append("")
 
     return "\n".join(lines)
+
+
+def build_market_factpack(ticker: str, market_section: str, company: Optional[str] = None) -> str:
+    """Fact pack for a ticker without a sourced fundamentals file: market data only"""
+    return "\n".join([
+        f"# {company or ticker} ({ticker}) fact pack",
+        "",
+        "No sourced quarterly fundamentals for this ticker yet; figures below are market data and "
+        "third-party analyst estimates (‡), not company filings.",
+        "",
+        market_section,
+        "## Sources",
+        "",
+        "- `market_data`: daily closing prices, share counts and analyst consensus estimates "
+        "(market data, not company filings)",
+        "",
+    ])

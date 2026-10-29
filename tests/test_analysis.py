@@ -200,7 +200,7 @@ def test_weekly_section():
         ("EV / TTM revenue: 61.1x (a week earlier at the same fundamentals: 57.7x)" in text,
          "multiple vs a week earlier"),
         ("$1.28T (3,200M shares)" in text, "peer market cap"),
-        ("1.57x (+57.0% premium)" in text, "premium over peer"),
+        ("1.57x (57.0% premium)" in text, "premium over peer"),
         ("## Week ending 2026-10-23 [market_data]" in factpack and "`market_data`" in factpack,
          "section and source in fact pack"),
     ]
@@ -322,6 +322,75 @@ def test_commentary():
     return all(ok for ok, _ in checks)
 
 
+def test_band_and_relative():
+    """Valuation band (estimate range × multiple range) and relative performance"""
+    print("\nTesting valuation band and relative performance...")
+    from src.analysis.band import band_lines, relative_lines, valuation_band, zone
+    from src.analysis.factpack import build_market_factpack
+    from src.analysis.weekly import weekly_section
+    band = valuation_band({"low": 5.0, "avg": 6.0, "high": 7.0, "analysts": 20}, "0y", "eps", 20, 30)
+    lines = "\n".join(band_lines([band], 138.0, "market_data"))
+    rel = relative_lines("RH", [("2026-10-07", 120.0), ("2026-10-22", 137.88)],
+                         {"^GSPC": [("2026-10-07", 6000.0), ("2026-10-22", 5922.0)]}, "2026-10-07")
+    market = weekly_section(None, [("2026-10-15", 130.0), ("2026-10-22", 138.0)], ticker="RH",
+                            extra_lines=rel, shares_m=18.7, peers={"WSM": (200.0, 125.0)})
+    pack = build_market_factpack("RH", market)
+    checks = [
+        ((band.low, band.mid, band.high) == (100.0, 150.0, 210.0), "band low / mid / high"),
+        ((band.consensus_low, band.consensus_high) == (120.0, 180.0), "band on the average estimate"),
+        (abs(band.position(138.0) - 38 / 110 * 100) < 1e-9 and zone(34.5) == "mid band", "position in band"),
+        (zone(10) == "near the low end" and zone(80) == "near the high end" and zone(120) == "above the band",
+         "zones"),
+        ("EPS $5.00 – $7.00‡ (avg $6.00‡, 20 analysts) × 20x – 30x P/E" in lines, "band estimate line"),
+        ("sits at 35% of the band: mid band" in lines, "band position line"),
+        ("vs S&P 500: +16.2 pts (RH +14.9%, S&P 500 -1.3%)" in rel[1], "relative performance in channel form"),
+        ("RH market cap: $2.58B (18.7M shares)" in market and "0.10x (89.7% discount)" in market,
+         "market-only peer gap"),
+        ("No sourced quarterly fundamentals" in pack and "`market_data`" in pack, "market-only fact pack"),
+    ]
+    for ok, label in checks:
+        print(f"  {'✓' if ok else '✗'} {label}")
+    if not all(ok for ok, _ in checks):
+        print(lines, rel, market, sep="\n")
+    return all(ok for ok, _ in checks)
+
+
+def test_method_review():
+    """Method review accepts a valid revised playbook and rejects one that drops keys"""
+    print("\nTesting method review (stubbed model)...")
+    import json
+    from types import SimpleNamespace
+    from src.analysis.method import review_method
+    from src.analysis.slack import Post
+    playbook = "ticker: RH\n# band\nmethod:\n  valuation_band: {basis: eps}\nthesis_questions: [a]\n"
+
+    def client_returning(result):
+        calls = []
+
+        def create(**kwargs):
+            calls.append(kwargs)
+            return _Message(json.dumps(result))
+        return SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(create=create))), calls
+
+    base = {"summary": "Trimmed half at 138.", "changes": [{"what": "x", "why": "y", "quote": "q", "post_date": "2026-10-22"}],
+            "claims": ["RH rose 14.9% since Oct 7"]}
+    good, calls = client_returning(dict(base, changed=True, playbook_yaml=playbook + "kpis: [margin]  # 2026-10-22\n"))
+    posts = [Post("1792771200.0", "Reducing risk by 50%", images=[("image/png", b"png")])]
+    accepted = review_method(posts, playbook, "method", good)
+    bad, _ = client_returning(dict(base, changed=True, playbook_yaml="ticker: RH\n"))
+    rejected = review_method(posts, playbook, "method", bad)
+    content = calls[0]["messages"][0]["content"]
+    checks = [
+        (accepted.changed and "kpis" in accepted.playbook_yaml, "valid revision accepted"),
+        (not rejected.changed and "drops keys" in rejected.rejected, "revision dropping keys rejected"),
+        (content[0]["type"] == "image" and "Reducing risk" in content[-1]["text"], "charts and text sent"),
+        (accepted.claims == ["RH rose 14.9% since Oct 7"], "claims passed through for fact check"),
+    ]
+    for ok, label in checks:
+        print(f"  {'✓' if ok else '✗'} {label}")
+    return all(ok for ok, _ in checks)
+
+
 if __name__ == "__main__":
     print("=" * 60)
     print("ANALYST DATA LAYER - TEST SUITE")
@@ -336,6 +405,8 @@ if __name__ == "__main__":
         ("Weekly section", test_weekly_section()),
         ("Verifier agent", test_verifier()),
         ("Commentary agent", test_commentary()),
+        ("Band and relative", test_band_and_relative()),
+        ("Method review", test_method_review()),
     ]
     print("\n" + "=" * 60)
     for name, passed in results:

@@ -1,8 +1,9 @@
 name: Weekly Report
 
 # Every Saturday: analyst memo, commentary and fact check for each ticker,
-# opened as one issue per ticker for review. Nothing is posted to Slack;
-# a person approves the draft first.
+# opened as one issue per ticker for review. When the methodology author's
+# new posts change the method, the revised playbooks open as a pull request.
+# Nothing is posted to Slack; a person approves every draft and change.
 on:
   schedule:
     # Saturdays 13:00 UTC, after Friday's close is in the price data
@@ -15,8 +16,9 @@ on:
         default: ''
 
 permissions:
-  contents: read
+  contents: write
   issues: write
+  pull-requests: write
 
 jobs:
   report:
@@ -38,6 +40,7 @@ jobs:
       - name: Write reports
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}   # optional: enables the method review
           TICKERS: ${{ inputs.tickers }}
         run: python scripts/run_weekly.py $TICKERS
 
@@ -61,3 +64,31 @@ jobs:
               --title "Weekly report for review: $ticker ($(date -u +%Y-%m-%d))" \
               --body-file "$body"
           done
+
+      - name: Propose method changes
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- playbooks/; then
+            echo "No method changes this week."
+            exit 0
+          fi
+          branch="method-update/$(date -u +%Y-%m-%d)-${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add playbooks/
+          git commit -m "Method update from this week's channel posts"
+          git push origin "$branch"
+          {
+            echo "The methodology author's posts this week change the method for these tickers."
+            echo "Merge to have next week's reports follow it; close to ignore."
+            echo
+            cat reports/method_changes.md
+          } > method_pr.md
+          if ! gh pr create --head "$branch" --title "Method update: $(date -u +%Y-%m-%d)" --body-file method_pr.md; then
+            # Actions may not be allowed to open PRs in this repo; fall back to an issue
+            gh issue create --title "Method update ready on branch $branch" --body-file method_pr.md
+          fi
+
