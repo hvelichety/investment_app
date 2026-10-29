@@ -149,8 +149,12 @@ def acquisition_reference(ticker, close, day, cfg):
     acquirer = cfg["acquirer"]
     acq_close, acq_shares = peer_quote(acquirer, day)
     note = f"{acq_shares:,.0f}M shares, market data"
-    if has_fundamentals(acquirer):
-        # Prefer the share count from the acquirer's latest sourced balance sheet
+    if cfg.get("acquirer_diluted_shares_m"):
+        # Diluted weighted shares, matching the target's diluted basis
+        acq_shares = float(cfg["acquirer_diluted_shares_m"])
+        note = f"{acq_shares:,.0f}M diluted shares, {cfg.get('acquirer_shares_source', 'playbook')}"
+    elif has_fundamentals(acquirer):
+        # Otherwise prefer the share count from the acquirer's latest sourced balance sheet
         v = metrics.valuation(load_fundamentals(acquirer), acq_close, day)
         acq_shares = v.shares_m
         note = f"{acq_shares:,.0f}M shares per balance sheet {v.balance_sheet_date}"

@@ -16,7 +16,11 @@ method:
   # SPCX-minus-Tesla market value gap per Tesla diluted share, weekly closes since the SPCX IPO (2026-06-12)
   acquisition_reference:
     acquirer: SPCX
-    target_diluted_shares_m: 3541   # Tesla diluted shares used in the chart
+    target_diluted_shares_m: 3541   # Tesla diluted weighted shares, Q3 2026 10-Q (matches the 2026-10-26 chart)
+    # SpaceX on the same diluted basis: Q3 2026 10-Q diluted weighted shares. The 2026-10-26 chart
+    # implies ~12,540M; period-end outstanding (13,579M) would overstate the gap.
+    acquirer_diluted_shares_m: 12475
+    acquirer_shares_source: SpaceX Q3 2026 10-Q
     gap_shares: [0.25, 0.5]
 
 relative:

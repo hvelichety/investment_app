@@ -71,7 +71,9 @@ thesis).
 Acquisition reference price (Tesla chart, Oct 26): the gap between the
 acquirer's market value and the target's market cap, spread over the
 target's diluted shares; reference lines at the target's price plus 25% and
-50% of that gap per share, tracked weekly since the acquirer's IPO.
+50% of that gap per share, tracked weekly since the acquirer's IPO. Both
+share counts are diluted weighted averages from the latest 10-Q, so the two
+market values are on the same basis.
 
 ## 6. Events
 
