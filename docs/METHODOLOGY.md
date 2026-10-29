@@ -26,7 +26,10 @@ The core tool. A stock's fair range is
   and next × a P/E range taken from the stock's own history (RH: 20x to
   30x; NVDA: 30x to 60x), alongside the current P/E on each year's estimate
   (RH chart, Oct 22: $5.36 FY26E and $8.52 FY27E → $107 to $161 and $170
-  to $256; current 25.8x and 16.2x). The estimate source is named.
+  to $256; current 25.8x and 16.2x). The estimate source is named. The
+  channel uses stockanalysis.com (S&P Global data): the Friday review
+  records its figures in data/estimates/<TICKER>.yaml with the page's update
+  date, and Yahoo Finance fills any year the free page doesn't show.
 - Companies valued on revenue (SpaceX): revenue projections × EV / revenue,
   also EV / trailing and EV / run-rate revenue.
 - The band is projected to a horizon date (year-end), and the price is
@@ -71,7 +74,9 @@ thesis).
 Acquisition reference price (Tesla chart, Oct 26): the gap between the
 acquirer's market value and the target's market cap, spread over the
 target's diluted shares; reference lines at the target's price plus 25% and
-50% of that gap per share, tracked weekly since the acquirer's IPO.
+50% of that gap per share, tracked weekly since the acquirer's IPO. Both
+share counts are diluted weighted averages from the latest 10-Q, so the two
+market values are on the same basis.
 
 ## 6. Events
 

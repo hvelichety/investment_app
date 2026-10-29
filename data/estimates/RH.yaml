@@ -1,0 +1,12 @@
+# Analyst estimates recorded by the Friday method review from stockanalysis.com,
+# the source used in #stock-rh. The site's terms bar scripts, so the weekly
+# script reads this file and never fetches the site. Periods match yfinance
+# ("0y" = current fiscal year); stale after 14 days, then Yahoo is used.
+ticker: RH
+source: stockanalysis.com
+url: https://stockanalysis.com/stocks/rh/forecast/
+recorded: 2026-10-29
+site_updated: 2026-10-20
+eps:
+  0y: {fiscal_year: "FY2027 as the site labels it (ends Jan 31, 2027)", low: 4.10, avg: 5.30, high: 7.07, analysts: 19}
+  # +1y (FY2027) is Pro-only on the site; Yahoo fills it
