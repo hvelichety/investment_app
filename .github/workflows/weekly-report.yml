@@ -1,19 +1,27 @@
 name: Weekly Report
 
-# Every Saturday: analyst memo, commentary and fact check for each ticker,
-# opened as one issue per ticker for review. When the methodology author's
-# new posts change the method, the revised playbooks open as a pull request.
-# Nothing is posted to Slack; a person approves every draft and change.
+# Scheduled (Friday night, after the close): fact packs only, committed to
+# data/factpacks/. No API key is used. The commentary, fact check and review
+# issues are then written from the Claude project on Saturday (the user chose
+# this on 2026-11-04 to avoid API costs).
+#
+# Run manually with mode "full" for the old fully automated report: analyst
+# memo, commentary and fact check through the Anthropic API (uses credits),
+# opened as one issue per ticker. Nothing is posted to Slack.
 on:
   schedule:
-    # Saturdays 13:00 UTC, after Friday's close is in the price data
-    - cron: '0 13 * * 6'
+    # Fridays 23:17 UTC, after the 22:30 data update
+    - cron: '17 23 * * 5'
   workflow_dispatch:
     inputs:
       tickers:
         description: Space-separated tickers (blank = every ticker with a playbook)
         required: false
         default: ''
+      mode:
+        description: factpacks (no API cost) or full (uses Anthropic API credits)
+        required: false
+        default: factpacks
 
 permissions:
   contents: write
@@ -37,7 +45,25 @@ jobs:
       - name: Check data and run tests
         run: python tests/test_analysis.py
 
+      - name: Write fact packs
+        if: github.event_name == 'schedule' || inputs.mode != 'full'
+        env:
+          TICKERS: ${{ inputs.tickers }}
+        run: |
+          python scripts/run_weekly.py --factpacks-only $TICKERS
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/factpacks/
+          if git diff --cached --quiet; then
+            echo "Fact packs unchanged."
+          else
+            git commit -m "Fact packs: week ending $(date -u +%Y-%m-%d)"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
       - name: Write reports
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'full'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}   # optional: enables the method review
@@ -45,7 +71,7 @@ jobs:
         run: python scripts/run_weekly.py $TICKERS
 
       - name: Keep reports
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.mode == 'full'
         uses: actions/upload-artifact@v4
         with:
           name: weekly-reports
@@ -53,7 +79,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Open review issues
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.mode == 'full'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -66,7 +92,7 @@ jobs:
           done
 
       - name: Propose method changes
-        if: always()
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.mode == 'full'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

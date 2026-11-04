@@ -4,6 +4,13 @@ Weekly report: analyst memo, commentary, and fact check for each ticker.
 Usage:
     ANTHROPIC_API_KEY=... python3 scripts/run_weekly.py            # every ticker with a playbook
     ANTHROPIC_API_KEY=... python3 scripts/run_weekly.py SPCX TSLA
+    python3 scripts/run_weekly.py --factpacks-only                 # step 1 only, no API key
+
+With --factpacks-only, only the fact packs are written, to
+data/factpacks/<TICKER>.md. The weekly workflow uses this mode: the
+commentary and fact check are then written from the Claude project (the
+user chose this on 2026-11-04 to avoid API costs), which reads the
+committed fact packs.
 
 For each ticker (method: docs/METHODOLOGY.md, per-ticker settings in playbooks/):
   1. Fact pack: sourced fundamentals when data/fundamentals/<TICKER>.yaml
@@ -87,6 +94,7 @@ def peer_quote(ticker: str, day: str):
 
 
 ESTIMATES_DIR = Path(ROOT_DIR) / "data" / "estimates"
+FACTPACK_DIR = os.path.join(ROOT_DIR, "data", "factpacks")
 ESTIMATES_MAX_AGE_DAYS = 14
 
 
@@ -316,7 +324,8 @@ def method_review(ticker, playbook, playbook_path, methodology, factpack, client
     return review, channel_check
 
 
-def run(ticker: str, client, methodology: str):
+def build(ticker: str):
+    """Everything the agents read, from market data and sourced files only (no model calls)"""
     playbook_path = os.path.join(ROOT_DIR, "playbooks", f"{ticker}.yaml")
     with open(playbook_path, encoding="utf-8") as f:
         playbook = yaml.safe_load(f)
@@ -341,6 +350,20 @@ def run(ticker: str, client, methodology: str):
     else:
         factpack = build_market_factpack(ticker, market, playbook.get("company"))
         known_urls = set()
+    return playbook, playbook_path, fund, day, factpack, known_urls
+
+
+def write_factpack(ticker: str):
+    """Fact pack only, for reports written outside this script (no API key needed)"""
+    _, _, _, day, factpack, _ = build(ticker)
+    os.makedirs(FACTPACK_DIR, exist_ok=True)
+    with open(os.path.join(FACTPACK_DIR, f"{ticker}.md"), "w", encoding="utf-8") as f:
+        f.write(f"<!-- week ending {day} -->\n{factpack}")
+    print(f"{ticker}: wrote data/factpacks/{ticker}.md (week ending {day})")
+
+
+def run(ticker: str, client, methodology: str):
+    playbook, playbook_path, fund, day, factpack, known_urls = build(ticker)
 
     memo_result = None
     if fund:
@@ -402,15 +425,21 @@ def run(ticker: str, client, methodology: str):
 
 
 def main():
-    import anthropic
-    client = anthropic.Anthropic()
-    tickers = [t.upper() for t in sys.argv[1:]] or tickers_with_playbooks()
-    with open(METHODOLOGY_PATH, encoding="utf-8") as f:
-        methodology = f.read()
+    args = sys.argv[1:]
+    factpacks_only = "--factpacks-only" in args
+    tickers = [t.upper() for t in args if not t.startswith("--")] or tickers_with_playbooks()
+    if not factpacks_only:
+        import anthropic
+        client = anthropic.Anthropic()
+        with open(METHODOLOGY_PATH, encoding="utf-8") as f:
+            methodology = f.read()
     failed = []
     for ticker in tickers:
         try:
-            run(ticker, client, methodology)
+            if factpacks_only:
+                write_factpack(ticker)
+            else:
+                run(ticker, client, methodology)
         except Exception as e:
             print(f"{ticker}: failed: {e}", file=sys.stderr)
             failed.append(ticker)
