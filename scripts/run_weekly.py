@@ -84,10 +84,18 @@ def shares_outstanding_m(ticker: str):
     return shares / 1e6 if shares else None
 
 
+def peer_shares_m(ticker: str, close: float, day: str):
+    """Shares for a peer's market cap: its sourced balance sheet (all share classes) when we
+    have one, else Yahoo. Yahoo's sharesOutstanding counts only SpaceX's listed Class A shares."""
+    if has_fundamentals(ticker):
+        return metrics.valuation(load_fundamentals(ticker), close, day).shares_m
+    return shares_outstanding_m(ticker)
+
+
 def peer_quote(ticker: str, day: str):
     """(close on or before `day`, shares outstanding in millions)"""
     closes = [(d, c) for d, c in price_history(ticker, "1y") if d <= day]
-    shares = shares_outstanding_m(ticker)
+    shares = peer_shares_m(ticker, closes[-1][1], day) if closes else None
     if not closes or not shares:
         raise RuntimeError(f"No quote or share count for {ticker}")
     return closes[-1][1], shares
@@ -201,9 +209,8 @@ def acquisition_reference(ticker, close, day, cfg):
         acq_shares = float(cfg["acquirer_diluted_shares_m"])
         note = f"{acq_shares:,.0f}M diluted shares, {cfg.get('acquirer_shares_source', 'playbook')}"
     elif has_fundamentals(acquirer):
-        # Otherwise prefer the share count from the acquirer's latest sourced balance sheet
+        # peer_quote already used the acquirer's latest sourced balance sheet
         v = metrics.valuation(load_fundamentals(acquirer), acq_close, day)
-        acq_shares = v.shares_m
         note = f"{acq_shares:,.0f}M shares per balance sheet {v.balance_sheet_date}"
     return acquisition_lines(ticker, close, float(cfg["target_diluted_shares_m"]), acquirer,
                              acq_close * acq_shares, tuple(cfg.get("gap_shares", (0.25, 0.5))),

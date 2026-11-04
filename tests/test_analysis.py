@@ -411,7 +411,7 @@ def test_recorded_estimates():
     from datetime import date
     from pathlib import Path
     from src.analysis.band import band_lines, valuation_band
-    spec = importlib.util.spec_from_file_location("run_weekly", Path(__file__).resolve().parents[1] / "scripts" / "run_weekly.py")
+    spec = importlib.util.spec_from_file_location("run_weekly", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts", "run_weekly.py"))
     rw = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(rw)
     with tempfile.TemporaryDirectory() as d:
@@ -436,6 +436,18 @@ def test_recorded_estimates():
     return all(ok for ok, _ in checks)
 
 
+def test_peer_shares_prefer_balance_sheet():
+    """SPCX peer cap uses all share classes from the balance sheet, not Yahoo's Class A count"""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("run_weekly", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts", "run_weekly.py"))
+    rw = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rw)
+    rw.shares_outstanding_m = lambda t: 8247.0  # Yahoo: Class A only
+    assert round(rw.peer_shares_m("SPCX", 141.31, "2026-11-03")) == 13579
+    print("  ✓ SPCX peer shares from the balance sheet")
+    return True
+
+
 if __name__ == "__main__":
     print("=" * 60)
     print("ANALYST DATA LAYER - TEST SUITE")
@@ -453,6 +465,7 @@ if __name__ == "__main__":
         ("Band and relative", test_band_and_relative()),
         ("Method review", test_method_review()),
         ("Recorded estimates", test_recorded_estimates()),
+        ("Peer share count", test_peer_shares_prefer_balance_sheet()),
     ]
     print("\n" + "=" * 60)
     for name, passed in results:

@@ -18,8 +18,8 @@ Market data: Yahoo Finance daily closes.
   - 25% line: $423.33 (TSLA close + 25% of the gap per share)
   - 50% line: $448.17 (TSLA close + 50% of the gap per share)
 - TSLA market cap: $1.58T (3,953M shares)
-- SPCX close: $141.31; market cap $1.17T (8,247M shares)
-- TSLA market cap vs SPCX: $1.58T vs $1.17T, 1.35x (35.2% premium)
+- SPCX close: $141.31; market cap $1.92T (13,579M shares, balance sheet 2026-09-30)
+- TSLA market cap vs SPCX: $1.58T vs $1.92T, 0.82x (17.9% discount)
 
 ## Sources
 
