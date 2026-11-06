@@ -30,6 +30,8 @@ kpis:
   - launches_internal
   - mass_to_orbit_t
   - compute_gw
+  # Not in the fact pack yet: xAI monthly active users vs AI assistant peers (chart 2026-11-02;
+  # xAI actuals from SpaceX filings, 89M and 117M; later points are third-party estimates).
 
 leading_indicators:
   - Launch cadence and failures lead satellite deployment, which leads Starlink coverage and subscribers.
@@ -49,6 +51,7 @@ relative:
 events_to_watch:
   - Insider lockup expirations (schedule shared in #stock-spcx, 2026-10-13).
   - Quarterly results; the 10-Q follows the release, so check release figures against it.
+  - Post-midterm headline risk (2026-11-04): congressional scrutiny of defense contracts, the DOGE inquiry, possible subpoenas from January. Not expected to be material.
 
 style:
   audience: Experienced investors in the channel; write like a senior equity analyst reporting to a CFO.

@@ -17,7 +17,7 @@ from .factpack import _money, _pct
 
 PERIOD_LABELS = {"0q": "current quarter", "+1q": "next quarter",
                  "0y": "current fiscal year", "+1y": "next fiscal year"}
-BENCHMARK_LABELS = {"^GSPC": "S&P 500", "^IXIC": "Nasdaq", "^DJI": "Dow"}
+BENCHMARK_LABELS = {"^GSPC": "S&P 500", "^IXIC": "Nasdaq", "^DJI": "Dow", "^RUT": "Russell 2000"}
 
 
 @dataclass

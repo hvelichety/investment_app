@@ -5,7 +5,7 @@
 ticker: RH
 source: stockanalysis.com
 url: https://stockanalysis.com/stocks/rh/forecast/
-recorded: 2026-10-29
+recorded: 2026-11-06
 site_updated: 2026-10-20
 eps:
   0y: {fiscal_year: "FY2027 as the site labels it (ends Jan 31, 2027)", low: 4.10, avg: 5.30, high: 7.07, analysts: 19}
