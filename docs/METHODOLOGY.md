@@ -63,6 +63,8 @@ the financials do:
 Measure the stock against the S&P 500 and Nasdaq since a decision date
 (e.g. "RH vs S&P 500: +16.2 pts since Oct 7 close"), so a move is judged
 against the market, not in isolation.
+The RH chart of 2026-11-02 adds the Russell 2000 as a third benchmark
+(playbook `benchmarks` list).
 
 ## 5. Comparables and sum of parts
 
