@@ -17,7 +17,7 @@ method:
     zones: {low: 25, high: 75}
     horizon: 2026-12-31
   relative_performance:
-    benchmarks: ["^GSPC", "^IXIC"]
+    benchmarks: ["^GSPC", "^IXIC", "^RUT"]   # Russell 2000 added in the 2026-11-02 return chart
     since: 2026-10-07   # scaled into full allocation at ~117 (#stock-rh)
 
 thesis_questions:
@@ -29,17 +29,20 @@ kpis:
   - gross and operating margin (tariff impact)
   - analyst EPS estimate revisions (low / avg / high)
   - price 5 business days after each earnings report vs that year's band (history in the P/E range chart, 2026-10-22)
+  - short interest as % of shares outstanding, and days to cover, at quarter end (charts 2026-11-01)
 
 decisions:   # position actions taken under the band method, for context in later reports
   - 2026-10-07: scaled into full allocation at ~117, near the low end of the band
   - 2026-10-22: reduced risk by 50% at 138; letting the rest run toward 150 to 160 (FY2026E high end) by 12/31
+  - 2026-10-31: watching closely at the high range of the band ($146.66 Oct 30 close, P/E 27.7x FY2026E)
+  - 2026-11-02: called it a good exit near the Dec projection high range (~$153.62 intraday vs the $159 FY2026E 30x line)
 
 leading_indicators:
   - Tariff policy changes lead margin changes.
   - Estimate revisions lead moves in the valuation band.
 
 events_to_watch:
-  - Quarterly earnings (post-earnings moves are tracked against the band).
+  - Quarterly earnings (post-earnings moves are tracked against the band); next report in December (2026-10-31 post).
   - Tariff announcements affecting furniture imports.
 
 style:

@@ -37,6 +37,7 @@ kpis:
   - robotaxis registered and active (Tesla vs Waymo)
   - FSD subscriptions and utilization
   - cost per mile vs Uber
+  - driverless-only service area in sq mi by city, Tesla vs Waymo (2026-11-02 chart; sources robotracker.app, Not a Tesla App, wheresthedriver.com, driverlessrider; Pei's mid-2027 projection is labeled judgment, not fact)
 
 leading_indicators:
   - Registry counts lead reported fleet size.
@@ -46,6 +47,8 @@ events_to_watch:
   - Quarterly earnings and robotaxi updates.
   - Product events (Cybercab, Roadster, Optimus).
   - Any SpaceX and Tesla merger news.
+  - State-level political footprint (2026-11-07): Texas (Giga Texas, HQ) and Nevada (Gigafactory Nevada) elected Democratic governors; EV tax policy via Congress.
+  - Post-midterm headline risk (2026-11-04): tighter robotaxi oversight, merger scrutiny, Musk's political exposure. Not expected to be material.
 
 style:
   audience: Experienced investors in the channel; write like a senior equity analyst reporting to a CFO.
