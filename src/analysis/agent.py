@@ -20,6 +20,8 @@ from typing import List
 import anthropic
 import yaml
 
+from .numbers import NUMBER_RE, PERIOD_RE, unsupported_numbers  # noqa: F401  (re-exported)
+
 MODEL = "claude-opus-5-5"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
@@ -79,11 +81,6 @@ REVIEW_SCHEMA = {
     "additionalProperties": False,
 }
 
-# $14.57B, -$477M, 61.1x, +161.4%, 13,579M, 13.6
-NUMBER_RE = re.compile(r"[-+−]?\$?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:[BMT%x](?![A-Za-z]))?")
-PERIOD_RE = re.compile(r"^(?:19|20)\d{2}(?:Q[1-4])?$")
-
-
 @dataclass
 class MemoResult:
     memo: str
@@ -95,23 +92,6 @@ class MemoResult:
     @property
     def clean(self) -> bool:
         return not self.unsupported_numbers and self.review.get("verdict") == "pass"
-
-
-def unsupported_numbers(memo: str, factpack: str) -> List[str]:
-    """Figures in the memo that don't appear verbatim in the fact pack"""
-    haystack = factpack.replace("−", "-")
-    found = []
-    for match in NUMBER_RE.finditer(memo.replace("−", "-")):
-        token = match.group(0).lstrip("+")
-        bare = token.lstrip("-").lstrip("$")
-        # Period labels, list numbering and small counts are not figures
-        if PERIOD_RE.match(bare) or re.fullmatch(r"\d", bare):
-            continue
-        if memo[match.end():match.end() + 1] == "Q":  # "2026Q3"
-            continue
-        if token not in haystack and token.lstrip("-") not in haystack:
-            found.append(token)
-    return sorted(set(found))
 
 
 def _text(message) -> str:

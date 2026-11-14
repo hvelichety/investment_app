@@ -1,7 +1,9 @@
 name: Weekly Report
 
 # Scheduled (Friday night, after the close): fact packs only, committed to
-# data/factpacks/. No API key is used. The commentary, fact check and review
+# data/factpacks/, plus the scorecard in data/metrics/. No API key is used.
+# The pre-post gate (src/analysis/gate.py) checks each pack as it is built;
+# stale packs are rebuilt up to 3 times, and again Saturday morning. The commentary, fact check and review
 # issues are then written from the Claude project on Saturday (the user chose
 # this on 2026-11-04 to avoid API costs).
 #
@@ -12,6 +14,9 @@ on:
   schedule:
     # Fridays 23:17 UTC, after the 22:30 data update
     - cron: '17 23 * * 5'
+    # Saturdays 07:23 UTC: rebuild any pack that is still stale, before the
+    # 4:41 AM New York report run (09:41 UTC in winter, 08:41 in summer)
+    - cron: '23 7 * * 6'
   workflow_dispatch:
     inputs:
       tickers:
@@ -45,19 +50,60 @@ jobs:
       - name: Check data and run tests
         run: python tests/test_analysis.py
 
-      - name: Write fact packs
+      - name: Write fact packs (rebuilt until fresh)
+        id: packs
         if: github.event_name == 'schedule' || inputs.mode != 'full'
         env:
           TICKERS: ${{ inputs.tickers }}
+          SCHEDULE: ${{ github.event.schedule }}
         run: |
-          python scripts/run_weekly.py --factpacks-only $TICKERS
+          tickers="$TICKERS"
+          if [ "$SCHEDULE" = "23 7 * * 6" ]; then
+            # Saturday morning safety net: rebuild only packs that are stale or missing
+            tickers=$(python scripts/gate.py packs --stale-only $TICKERS || true)
+            if [ -z "$tickers" ]; then
+              echo "All fact packs are fresh; nothing to rebuild."
+              exit 0
+            fi
+            echo "Rebuilding stale packs: $tickers"
+          fi
+          # The pre-post gate runs inside the build: lines that fail a sanity
+          # check are removed from the pack and the fix is recorded.
+          for attempt in 1 2 3; do
+            python scripts/run_weekly.py --factpacks-only $tickers || true
+            stale=$(python scripts/gate.py packs --stale-only $tickers || true)
+            if [ -z "$stale" ]; then
+              echo "Fact packs fresh after attempt $attempt."
+              break
+            fi
+            echo "Still stale after attempt $attempt: $stale"
+            tickers="$stale"
+            if [ "$attempt" -lt 3 ]; then sleep 600; fi
+          done
+          if [ -n "$stale" ]; then
+            echo "::warning::Fact packs still stale after 3 attempts: $stale. Those tickers' Saturday posts will be held."
+          fi
+          python scripts/gate.py packs || true
+
+      - name: Scorecard
+        if: github.event_name == 'schedule' || inputs.mode != 'full'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue list --state all --search "Weekly report in:title" --limit 40 \
+            --json title,body,createdAt,url > "$RUNNER_TEMP/issues.json" || echo "[]" > "$RUNNER_TEMP/issues.json"
+          python scripts/scorecard.py --issues "$RUNNER_TEMP/issues.json"
+
+      - name: Commit fact packs and metrics
+        if: github.event_name == 'schedule' || inputs.mode != 'full'
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/factpacks/
+          git add data/factpacks/ data/metrics/
           if git diff --cached --quiet; then
-            echo "Fact packs unchanged."
+            echo "Fact packs and metrics unchanged."
           else
-            git commit -m "Fact packs: week ending $(date -u +%Y-%m-%d)"
+            git commit -m "Fact packs and scorecard: week ending $(date -u +%Y-%m-%d)"
             git pull --rebase origin main
             git push origin HEAD:main
           fi
