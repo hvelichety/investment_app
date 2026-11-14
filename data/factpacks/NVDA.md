@@ -22,8 +22,8 @@ Market data: Yahoo Finance daily closes.
 
 Band = the average analyst estimate × the multiple range. Analyst estimates are third-party (‡); multiples come from the playbook. Position: 0% = low end of the band, 100% = high end.
 
-- current fiscal year: EPS avg $9.32‡ (range $8.78 – $10.10‡, 50 analysts; Yahoo Finance) × 30x – 60x P/E
-  - Band: $279.70 – $559.40 (full estimate range: $263.52 – $606.00)
+- current fiscal year: EPS avg $9.31‡ (range $9.01 – $10.10‡, 54 analysts; stockanalysis.com, updated 2026-11-03) × 30x – 60x P/E
+  - Band: $279.30 – $558.60 (full estimate range: $270.30 – $606.00)
   - Current P/E on the average estimate: 17.5x
   - Price $162.85 sits at -42% of the band: below the band
 - next fiscal year: EPS avg $15.83‡ (range $11.85 – $18.75‡, 51 analysts; Yahoo Finance) × 30x – 60x P/E
