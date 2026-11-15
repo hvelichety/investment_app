@@ -14,7 +14,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.analysis.agent import unsupported_numbers  # noqa: E402
+from src.analysis.numbers import unsupported_numbers  # noqa: E402
 
 
 def main():

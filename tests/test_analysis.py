@@ -448,6 +448,114 @@ def test_peer_shares_prefer_balance_sheet():
     return True
 
 
+def test_gate():
+    """Pre-post gate: stale packs held, bad lines removed, untraceable figures and own calls dropped"""
+    print("\n[Pre-post gate]")
+    from datetime import date
+    from src.analysis.gate import check_draft, check_factpack, footer, is_fresh
+    pack = """<!-- week ending 2026-11-13 -->
+# RH (RH) fact pack
+
+- RH close: $129.39
+- 1-week change: -1.2% (from $130.96 on 2026-11-06)
+- RH market cap: $2.45B (18.9M shares)
+- TSLA close: $390.22; market cap $9.54T (3,953M shares)
+- RH market cap vs TSLA: $2.45B vs $9.54T, 0.00x (99.9% discount)
+
+## Valuation band [market_data]
+
+- current fiscal year: EPS avg $5.30‡ (range $4.10 – $7.07‡, 19 analysts; stockanalysis.com, updated 2026-10-20) × 20x – 30x P/E
+  - Band: $106.00 – $159.00 (full estimate range: $82.00 – $212.10)
+  - Current P/E on the average estimate: 24.4x
+  - Price $129.39 sits at 44% of the band: mid band
+- next fiscal year: EPS avg $0.10‡ (range $0.05 – $0.20‡, 20 analysts; Yahoo Finance) × 20x – 30x P/E
+  - Band: $2.00 – $3.00 (full estimate range: $1.00 – $6.00)
+  - Current P/E on the average estimate: 1293.9x
+  - Price $129.39 sits at 12839% of the band: above the band
+
+## Sources
+"""
+    sat = date(2026, 11, 14)
+    r = check_factpack("RH", pack, sat)
+    stale = check_factpack("RH", pack, date(2026, 11, 21))
+    checks = [
+        (is_fresh(date(2026, 11, 13), sat) and is_fresh(date(2026, 11, 12), sat)
+         and not is_fresh(date(2026, 11, 6), sat), "Friday or a Thursday holiday close is fresh on Saturday"),
+        (any(f.check == "fresh" for f in stale.open_holds) and not any(f.check == "fresh" for f in r.findings),
+         "last week's pack is held as stale"),
+        ("TSLA close: $390.22; market cap" not in r.text and "RH market cap vs TSLA" not in r.text
+         and "- RH market cap: $2.45B" in r.text, "bad peer market cap and its comparison removed, good one kept"),
+        ("1293.9x" not in r.text and "$5.30‡" in r.text, "band period with an absurd P/E removed, the other kept"),
+        (r.status == "fixed" and any(f.check == "estimate_age" for f in r.warnings), "fixes recorded, old estimates warned"),
+    ]
+    draft = """*RH: mid band*
+- RH closed at $129.39 (-1.2% on the week)
+- Price sits at 44% of the band on $5.30‡ EPS
+- Revenue guidance raised to $3.9B
+- We recommend investors buy the dip
+- Next: Q3 earnings Dec 11 per Reuters"""
+    d = check_draft("RH", draft, r.text, allowed="RH will report on Dec 11 (Reuters)")
+    held = check_draft("RH", "- RH guided to $3.9B\n- Margin 14.2%", r.text)
+    checks += [
+        (d.status == "fixed" and "$3.9B" not in d.text and "recommend" not in d.text
+         and "$129.39" in d.text and "Dec 11" in d.text, "untraceable figure and own call dropped, allowed news kept"),
+        (held.status == "hold", "held when too little is left after the fix"),
+        (footer(r.text, d.findings).startswith("_Data checks: 4/4 passed (2 auto-fixed) · prices as of Nov 13 close")
+         and "estimates updated Oct 20" in footer(r.text, d.findings), "footer line for the post"),
+    ]
+    for ok, label in checks:
+        print(f"  {'✓' if ok else '✗'} {label}")
+    return all(ok for ok, _ in checks)
+
+
+def test_scorecard():
+    """Scorecard: source gap, gap to Pei, week-to-week drift and the band-call track record"""
+    print("\n[Scorecard]")
+    import json
+    from pathlib import Path
+    from src.analysis.scorecard import track_record, update
+
+    def stats(week, close, bench, zone, avg=5.30, yahoo=5.80, shares=18.9):
+        return {"week_ending": week, "close": close, "shares_m": shares,
+                "benchmark": {"symbol": "^GSPC", "close": bench},
+                "bands": {"0y": {"estimate_avg": avg, "source": "stockanalysis.com, updated 2026-10-20",
+                                 "yahoo_avg": yahoo, "low": 106.0, "high": 159.0, "position": 10.0, "zone": zone}},
+                "gate": {"status": "pass", "findings": []}}
+
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        (root / "data" / "factpacks").mkdir(parents=True)
+        (root / "data" / "pei").mkdir()
+        (root / "data" / "pei" / "RH.yaml").write_text(
+            "ticker: RH\nentries:\n  - {date: 2026-11-10, period: 0y, estimate_avg: 5.36, zone: near the low end}\n")
+        pack = root / "data" / "factpacks" / "RH.json"
+        weeks = [("2026-10-16", 100.0, 6000, "near the low end"), ("2026-11-13", 112.0, 6100, "near the low end"),
+                 ("2026-11-20", 112.5, 6110, "mid band")]
+        for week, close, bench, zone in weeks:
+            pack.write_text(json.dumps(stats(week, close, bench, zone, shares=18.9 if week < "2026-11-20" else 20.0)))
+            text = update(root, [{"createdAt": "2026-11-21T10:00:00Z", "url": "https://example/issue/1",
+                                  "body": 'x <!-- gate: {"ticker": "RH", "status": "fixed", "findings": '
+                                          '[{"check": "figures", "severity": "hold", "fixed": true}]} --> y'}])
+        history = (root / "data" / "metrics" / "history.csv").read_text().splitlines()
+        reports = (root / "data" / "metrics" / "reports.csv").read_text().splitlines()
+        from src.analysis.scorecard import read_csv
+        rec = track_record(read_csv(root / "data" / "metrics" / "history.csv"), 4)
+    checks = [
+        (len(history) == 4, "one row per ticker per week"),
+        ("Yahoo differ by -8.6%" in text, "stockanalysis.com vs Yahoo gap flagged"),
+        ("-1.1% from Pei's" not in text and "Pei's latest post says \"near the low end\"" in text,
+         "small gap to Pei not flagged; different band zone flagged"),
+        ("share count moved +5.8%" in text, "week-to-week share count jump flagged"),
+        ("band zone changed (near the low end → mid band) on a +0.4% price move" in text,
+         "zone change without a matching price move flagged"),
+        (rec["RH"]["scored"] == 1 and rec["RH"]["hits"] == 1, "low-end call that beat the S&P 500 counts as working"),
+        (len(reports) == 2 and ",fixed,1,0," in reports[1], "Saturday gate record collected from the issue"),
+    ]
+    for ok, label in checks:
+        print(f"  {'✓' if ok else '✗'} {label}")
+    return all(ok for ok, _ in checks)
+
+
 if __name__ == "__main__":
     print("=" * 60)
     print("ANALYST DATA LAYER - TEST SUITE")
@@ -466,6 +574,8 @@ if __name__ == "__main__":
         ("Method review", test_method_review()),
         ("Recorded estimates", test_recorded_estimates()),
         ("Peer share count", test_peer_shares_prefer_balance_sheet()),
+        ("Pre-post gate", test_gate()),
+        ("Scorecard", test_scorecard()),
     ]
     print("\n" + "=" * 60)
     for name, passed in results:

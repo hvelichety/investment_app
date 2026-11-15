@@ -45,7 +45,8 @@ sys.path.insert(0, ROOT_DIR)
 
 from src.analysis import metrics  # noqa: E402
 from src.analysis.agent import run_analyst, unsupported_numbers  # noqa: E402
-from src.analysis.band import acquisition_lines, band_lines, relative_lines, valuation_band  # noqa: E402
+from src.analysis.band import acquisition_lines, band_lines, relative_lines, valuation_band, zone  # noqa: E402
+from src.analysis.gate import check_factpack  # noqa: E402
 from src.analysis.commentary import write_commentary  # noqa: E402
 from src.analysis.factpack import build_factpack, build_market_factpack  # noqa: E402
 from src.analysis.fundamentals import load_fundamentals  # noqa: E402
@@ -125,16 +126,20 @@ def recorded_estimates(ticker: str, basis: str, today: date = None):
     return {str(period): dict(row, source=note) for period, row in (data.get(basis) or {}).items()}
 
 
-def analyst_estimates(ticker: str, basis: str):
+def analyst_estimates(ticker: str, basis: str, yahoo_out: dict = None):
     """period ("0y", "+1y", ...) -> {"low", "avg", "high", "analysts", "source"}; revenue in $M
 
     Recorded stockanalysis.com figures (the channel's source) win; Yahoo fills the other periods.
+    yahoo_out, when given, receives Yahoo's own figures for every period, so the
+    scorecard can compare the two sources where both exist.
     """
     try:
         estimates = yahoo_estimates(ticker, basis)
     except Exception as e:
         print(f"  ! Yahoo estimates unavailable for {ticker}: {e}", file=sys.stderr)
         estimates = {}
+    if yahoo_out is not None:
+        yahoo_out.update({p: dict(e) for p, e in estimates.items()})
     estimates.update(recorded_estimates(ticker, basis))
     return estimates
 
@@ -157,11 +162,15 @@ def yahoo_estimates(ticker: str, basis: str):
     return estimates
 
 
-def market_lines(ticker, playbook, prices, fund):
-    """Band and relative-performance lines for the market section, per the playbook's method"""
+def market_lines(ticker, playbook, prices, fund, stats=None):
+    """Band and relative-performance lines for the market section, per the playbook's method.
+
+    stats, when given, is filled with the figures the scorecard tracks (bands, both estimate sources).
+    """
     method = playbook.get("method") or {}
     close = prices[-1][1]
     extra, band_section = [], []
+    stats = {} if stats is None else stats
 
     rel = method.get("relative_performance")
     if rel:
@@ -176,7 +185,8 @@ def market_lines(ticker, playbook, prices, fund):
     cfg = method.get("valuation_band")
     if cfg:
         try:
-            estimates = analyst_estimates(ticker, cfg["basis"])
+            yahoo = {}
+            estimates = analyst_estimates(ticker, cfg["basis"], yahoo)
             net_cash = shares = None
             if cfg["basis"] == "revenue":
                 v = metrics.valuation(fund, close, prices[-1][0])
@@ -185,6 +195,16 @@ def market_lines(ticker, playbook, prices, fund):
                                     net_cash_m=net_cash, shares_m=shares)
                      for p in cfg.get("periods", ["0y"]) if p in estimates]
             zones = cfg.get("zones") or {}
+            on = cfg.get("estimate", "avg")
+            stats["band_basis"] = cfg["basis"]
+            stats["bands"] = {b.period: {
+                "estimate_avg": b.estimate_avg, "source": b.source or "Yahoo Finance",
+                "yahoo_avg": (yahoo.get(b.period) or {}).get("avg"),
+                "low": b.consensus_low if on == "avg" else b.low,
+                "high": b.consensus_high if on == "avg" else b.high,
+                "position": round(b.position(close, on), 1),
+                "zone": zone(b.position(close, on), zones.get("low", 25), zones.get("high", 75)),
+            } for b in bands}
             if bands:
                 band_section = band_lines(bands, close, MARKET_SOURCE, (zones.get("low", 25), zones.get("high", 75)),
                                           on=cfg.get("estimate", "avg"))
@@ -331,8 +351,11 @@ def method_review(ticker, playbook, playbook_path, methodology, factpack, client
     return review, channel_check
 
 
-def build(ticker: str):
-    """Everything the agents read, from market data and sourced files only (no model calls)"""
+def build(ticker: str, stats: dict = None):
+    """Everything the agents read, from market data and sourced files only (no model calls).
+
+    stats, when given, is filled with the figures the scorecard tracks.
+    """
     playbook_path = os.path.join(ROOT_DIR, "playbooks", f"{ticker}.yaml")
     with open(playbook_path, encoding="utf-8") as f:
         playbook = yaml.safe_load(f)
@@ -346,7 +369,9 @@ def build(ticker: str):
             peers[peer["ticker"]] = peer_quote(peer["ticker"], day)
         except Exception as e:
             print(f"  ! {peer['ticker']} quote unavailable: {e}", file=sys.stderr)
-    extra, band_section = market_lines(ticker, playbook, prices, fund)
+    stats = {} if stats is None else stats
+    stats.update(week_ending=day, close=close)
+    extra, band_section = market_lines(ticker, playbook, prices, fund, stats)
     own_shares = None if fund else shares_outstanding_m(ticker)
     market = weekly_section(fund, prices, peers, ticker=ticker, extra_lines=extra, shares_m=own_shares)
     if band_section:
@@ -357,16 +382,42 @@ def build(ticker: str):
     else:
         factpack = build_market_factpack(ticker, market, playbook.get("company"))
         known_urls = set()
+    if own_shares:
+        stats["shares_m"] = own_shares
+    elif fund:
+        stats["shares_m"] = metrics.valuation(fund, close, day).shares_m
     return playbook, playbook_path, fund, day, factpack, known_urls
 
 
+SCORECARD_BENCHMARK = "^GSPC"
+
+
 def write_factpack(ticker: str):
-    """Fact pack only, for reports written outside this script (no API key needed)"""
-    _, _, _, day, factpack, _ = build(ticker)
+    """Fact pack only, for reports written outside this script (no API key needed).
+
+    The pre-post gate checks the pack first: a line that fails a sanity check
+    is removed (so no report can quote it) and the fix is recorded. Also
+    writes data/factpacks/<TICKER>.json with the figures the scorecard tracks.
+    """
+    stats = {}
+    _, _, _, day, factpack, _ = build(ticker, stats)
+    text = f"<!-- week ending {day} -->\n{factpack}"
+    result = check_factpack(ticker, text, date.today())
+    for f in result.findings:
+        print(f"  {'fixed' if f.fixed else f.severity}: {ticker} {f.check}: {f.detail}", file=sys.stderr)
+    try:
+        bench = [(d, c) for d, c in price_history(SCORECARD_BENCHMARK, "1mo") if d <= day]
+        stats["benchmark"] = {"symbol": SCORECARD_BENCHMARK, "close": bench[-1][1]} if bench else None
+    except Exception as e:
+        print(f"  ! {SCORECARD_BENCHMARK} unavailable: {e}", file=sys.stderr)
+    stats["gate"] = result.as_dict()
     os.makedirs(FACTPACK_DIR, exist_ok=True)
     with open(os.path.join(FACTPACK_DIR, f"{ticker}.md"), "w", encoding="utf-8") as f:
-        f.write(f"<!-- week ending {day} -->\n{factpack}")
-    print(f"{ticker}: wrote data/factpacks/{ticker}.md (week ending {day})")
+        f.write(result.text)
+    with open(os.path.join(FACTPACK_DIR, f"{ticker}.json"), "w", encoding="utf-8") as f:
+        json.dump(stats, f, indent=2)
+        f.write("\n")
+    print(f"{ticker}: wrote data/factpacks/{ticker}.md (week ending {day}, gate {result.status})")
 
 
 def run(ticker: str, client, methodology: str):
