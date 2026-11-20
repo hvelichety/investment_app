@@ -3,8 +3,8 @@
 ticker: NVDA
 source: stockanalysis.com
 url: https://stockanalysis.com/stocks/nvda/forecast/
-recorded: 2026-11-13
-site_updated: 2026-11-03
+recorded: 2026-11-20
+site_updated: 2026-11-18
 eps:
-  0y: {fiscal_year: "FY2027 as the site labels it (ends Jan 31, 2027)", low: 9.01, avg: 9.31, high: 10.10, analysts: 54}
+  0y: {fiscal_year: "FY2027 as the site labels it (ends Jan 31, 2027)", low: 9.39, avg: 9.65, high: 10.11, analysts: 44}
   # +1y (FY2028) is Pro-only on the site; Yahoo fills it

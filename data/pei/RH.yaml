@@ -1,0 +1,14 @@
+ticker: RH
+entries:
+  - date: 2026-11-19
+    post: https://group-think-talk.slack.com/archives/C0A22TTJSN5/p1795133775851299
+    period: 0y
+    estimate_avg: 5.30      # FY2026E (Jan 2027), stockanalysis.com updated Oct 20, per the chart footnote
+    band_low: 106           # 20x line as charted
+    band_high: 159          # 30x line as charted
+  - date: 2026-11-19
+    post: https://group-think-talk.slack.com/archives/C0A22TTJSN5/p1795133775851299
+    period: +1y
+    estimate_avg: 8.48      # FY2027E (Jan 2028), as charted
+    band_low: 170
+    band_high: 254
