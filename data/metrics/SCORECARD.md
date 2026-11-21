@@ -29,4 +29,9 @@ A call works when a stock below or near the low end of the band beats the S&P 50
 
 ## Saturday posts, last 8 weeks
 
-No gate records yet.
+| Date | Ticker | Gate | Fixes | Holds | Issue |
+|---|---|---|---|---|---|
+| 2026-11-21 | TSLA | pass | 0 | 0 | https://github.com/hvelichety/investment_app/issues/28 |
+| 2026-11-21 | SPCX | pass | 0 | 0 | https://github.com/hvelichety/investment_app/issues/27 |
+| 2026-11-21 | RH | pass | 0 | 0 | https://github.com/hvelichety/investment_app/issues/29 |
+| 2026-11-21 | NVDA | pass | 0 | 0 | https://github.com/hvelichety/investment_app/issues/30 |
