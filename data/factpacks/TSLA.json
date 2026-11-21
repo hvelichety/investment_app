@@ -1,0 +1,14 @@
+{
+  "week_ending": "2026-11-20",
+  "close": 345.82000732421875,
+  "shares_m": 3952.757946,
+  "benchmark": {
+    "symbol": "^GSPC",
+    "close": 6910.39013671875
+  },
+  "gate": {
+    "ticker": "TSLA",
+    "status": "pass",
+    "findings": []
+  }
+}

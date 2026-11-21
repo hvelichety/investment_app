@@ -1,4 +1,4 @@
-<!-- week ending 2026-11-13 -->
+<!-- week ending 2026-11-20 -->
 # Space Exploration Technologies Corp. (SPCX) fact pack
 
 Latest reported quarter: **2026Q3**. Units: USD. Each column header names the source documents for that quarter; cite those keys. † = derived from company totals (formula in the appendix); ‡ = third-party estimate, not company data.
@@ -74,14 +74,14 @@ Latest reported quarter: **2026Q3**. Units: USD. Each column header names the so
 - Net cash: $51.01B
 - Shares outstanding: 13,579M
 
-## Valuation at $139.11 (2026-11-13 close)
+## Valuation at $127.79 (2026-11-20 close)
 
-- Market cap: $1.89T (13,579M shares, balance sheet 2026-09-30)
-- Enterprise value: $1.84T (net cash $51.01B)
-- Market cap / TTM revenue: 59.0x
-- EV / TTM revenue: 57.4x
-- EV / annualized run-rate revenue: 31.5x
-- EV / TTM adjusted EBITDA: 123.0x
+- Market cap: $1.74T (13,579M shares, balance sheet 2026-09-30)
+- Enterprise value: $1.68T (net cash $51.01B)
+- Market cap / TTM revenue: 54.2x
+- EV / TTM revenue: 52.6x
+- EV / annualized run-rate revenue: 28.9x
+- EV / TTM adjusted EBITDA: 112.7x
 
 ## 2026Q3 actual vs estimate‡ [q3_2026_consensus]
 
@@ -92,21 +92,21 @@ Latest reported quarter: **2026Q3**. Units: USD. Each column header names the so
 | AI / Super Intelligence | $7.56B | $6.47B | +16.8% |
 | Total | $14.57B | $12.72B | +14.6% |
 
-## Week ending 2026-11-13 [market_data]
+## Week ending 2026-11-20 [market_data]
 
 Market data: Yahoo Finance daily closes. Fundamentals above are unchanged unless a release came out this week.
 
-- SPCX close: $139.11
-- 1-week change: +3.6% (from $134.27 on 2026-11-06)
-- 4-week change: -4.7% (from $146.03 on 2026-10-16)
-- 52-week range: $108.27 – $211.39 (108 trading days in data)
-- Since 2026-10-13 close (SPCX $156.54 → $139.11 on 2026-11-13):
-  - vs S&P 500: -8.0 pts (SPCX -11.1%, S&P 500 -3.1%)
-  - vs Nasdaq: -3.5 pts (SPCX -11.1%, Nasdaq -7.6%)
-- EV / TTM revenue: 57.4x (a week earlier at the same fundamentals: 55.3x)
-- EV / annualized run-rate revenue: 31.5x (a week earlier at the same fundamentals: 30.4x)
-- TSLA close: $390.22; market cap $1.54T (3,953M shares)
-- SPCX market cap vs TSLA: $1.89T vs $1.54T, 1.22x (22.5% premium)
+- SPCX close: $127.79
+- 1-week change: -8.1% (from $139.11 on 2026-11-13)
+- 4-week change: -13.4% (from $147.49 on 2026-10-23)
+- 52-week range: $108.27 – $211.39 (113 trading days in data)
+- Since 2026-10-13 close (SPCX $156.54 → $127.79 on 2026-11-20):
+  - vs S&P 500: -6.9 pts (SPCX -18.4%, S&P 500 -11.5%)
+  - vs Nasdaq: -1.5 pts (SPCX -18.4%, Nasdaq -16.9%)
+- EV / TTM revenue: 52.6x (a week earlier at the same fundamentals: 57.4x)
+- EV / annualized run-rate revenue: 28.9x (a week earlier at the same fundamentals: 31.5x)
+- TSLA close: $345.82; market cap $1.37T (3,953M shares)
+- SPCX market cap vs TSLA: $1.74T vs $1.37T, 1.27x (26.9% premium)
 
 ## Sources
 
