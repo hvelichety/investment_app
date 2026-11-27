@@ -1,0 +1,35 @@
+{
+  "week_ending": "2026-11-20",
+  "close": 125.52999877929688,
+  "band_basis": "eps",
+  "bands": {
+    "0y": {
+      "estimate_avg": 9.31,
+      "source": "stockanalysis.com, updated 2026-11-03",
+      "yahoo_avg": 9.66925,
+      "low": 279.3,
+      "high": 558.6,
+      "position": -55.1,
+      "zone": "below the band"
+    },
+    "+1y": {
+      "estimate_avg": 16.60528,
+      "source": "Yahoo Finance",
+      "yahoo_avg": 16.60528,
+      "low": 498.15840000000003,
+      "high": 996.3168000000001,
+      "position": -74.8,
+      "zone": "below the band"
+    }
+  },
+  "shares_m": 24147.0,
+  "benchmark": {
+    "symbol": "^GSPC",
+    "close": 6910.39013671875
+  },
+  "gate": {
+    "ticker": "NVDA",
+    "status": "pass",
+    "findings": []
+  }
+}

@@ -1,1 +1,5 @@
 week_ending,ticker,close,benchmark,benchmark_close,band_period,band_low,band_high,band_position,band_zone,estimate_avg,estimate_source,yahoo_avg,source_gap_pct,shares_m,pei_date,pei_estimate,pei_gap_pct,pei_zone,gate_status,gate_fixes,gate_warnings
+2026-11-20,NVDA,125.53,^GSPC,6910.39,0y,279.3,558.6,-55.1,below the band,9.31,"stockanalysis.com, updated 2026-11-03",9.66925,-3.72,24147.0,,,,,pass,0,
+2026-11-20,RH,107.94,^GSPC,6910.39,0y,106.0,159.0,3.7,near the low end,5.3,"stockanalysis.com, updated 2026-10-20",5.2925,0.14,18.9,,,,,pass,0,analyst estimates last updated 2026-10-20 (32 days ago); say so if the band is quoted
+2026-11-20,SPCX,127.79,^GSPC,6910.39,,,,,,,,,,13579.0,,,,,pass,0,
+2026-11-20,TSLA,345.82,^GSPC,6910.39,,,,,,,,,,3952.8,,,,,pass,0,
