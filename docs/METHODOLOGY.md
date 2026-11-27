@@ -44,6 +44,10 @@ Where the price sits in the band drives position sizing, not a buy/sell call:
 - Near the high end: reduce exposure leading up to it ("reducing risk by
   50% with this run-up to 138 from 117; let the remainder run to the 150 to
   160 high range").
+- Technicals come second ("Fundamentals are the foundation, then there's
+  the technical analysis", #stock-rh, 2026-11-22): a 14-day RSI near or
+  below 30 (oversold) at the low end of the band supports the scale-in
+  signal; it never overrides the band.
 
 ## 3. Leading indicators per thesis
 
