@@ -3,3 +3,7 @@ week_ending,ticker,close,benchmark,benchmark_close,band_period,band_low,band_hig
 2026-11-20,RH,107.94,^GSPC,6910.39,0y,106.0,159.0,3.7,near the low end,5.3,"stockanalysis.com, updated 2026-10-20",5.2925,0.14,18.9,,,,,pass,0,analyst estimates last updated 2026-10-20 (32 days ago); say so if the band is quoted
 2026-11-20,SPCX,127.79,^GSPC,6910.39,,,,,,,,,,13579.0,,,,,pass,0,
 2026-11-20,TSLA,345.82,^GSPC,6910.39,,,,,,,,,,3952.8,,,,,pass,0,
+2026-11-27,NVDA,150.49,^GSPC,7297.49,0y,290.17,580.35,-48.1,below the band,9.67246,Yahoo Finance,9.67246,,24147.0,,,,,pass,0,
+2026-11-27,RH,111.1,^GSPC,7297.49,0y,105.85,158.78,9.9,near the low end,5.2925,Yahoo Finance,5.2925,,18.9,,,,,pass,0,
+2026-11-27,SPCX,133.59,^GSPC,7297.49,,,,,,,,,,13579.0,,,,,pass,0,
+2026-11-27,TSLA,400.0,^GSPC,7297.49,,,,,,,,,,3952.8,,,,,pass,0,

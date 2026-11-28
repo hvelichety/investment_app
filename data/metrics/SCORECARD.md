@@ -1,4 +1,4 @@
-# Analyst scorecard: week ending 2026-11-20
+# Analyst scorecard: week ending 2026-11-27
 
 Written by the Friday fact pack run (scripts/scorecard.py). Thresholds are in src/analysis/scorecard.py.
 
@@ -6,15 +6,14 @@ Written by the Friday fact pack run (scripts/scorecard.py). Thresholds are in sr
 
 | Ticker | Close | Band zone | Position | Estimate (source) | vs Yahoo | vs Pei | Data check |
 |---|---|---|---|---|---|---|---|
-| NVDA | $125.53 | below the band | -55.1% | 9.31 (stockanalysis.com, updated 2026-11-03) | -3.7% | – | pass |
-| RH | $107.94 | near the low end | 3.7% | 5.3 (stockanalysis.com, updated 2026-10-20) | +0.1% | – | pass |
-| SPCX | $127.79 | – | – | – | – | – | pass |
-| TSLA | $345.82 | – | – | – | – | – | pass |
+| NVDA | $150.49 | below the band | -48.1% | 9.67246 (Yahoo Finance) | – | – | pass |
+| RH | $111.1 | near the low end | 9.9% | 5.2925 (Yahoo Finance) | – | – | pass |
+| SPCX | $133.59 | – | – | – | – | – | pass |
+| TSLA | $400.0 | – | – | – | – | – | pass |
 
 ## Flags
 
-- RH: analyst estimates last updated 2026-10-20 (32 days ago)
-- RH: say so if the band is quoted
+- None this week.
 
 ## Track record of band calls
 

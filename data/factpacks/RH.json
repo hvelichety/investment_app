@@ -1,15 +1,15 @@
 {
-  "week_ending": "2026-11-20",
-  "close": 107.94000244140625,
+  "week_ending": "2026-11-27",
+  "close": 111.0999984741211,
   "band_basis": "eps",
   "bands": {
     "0y": {
-      "estimate_avg": 5.3,
-      "source": "stockanalysis.com, updated 2026-10-20",
+      "estimate_avg": 5.2925,
+      "source": "Yahoo Finance",
       "yahoo_avg": 5.2925,
-      "low": 106.0,
-      "high": 159.0,
-      "position": 3.7,
+      "low": 105.85000000000001,
+      "high": 158.775,
+      "position": 9.9,
       "zone": "near the low end"
     },
     "+1y": {
@@ -18,26 +18,18 @@
       "yahoo_avg": 8.45253,
       "low": 169.05059999999997,
       "high": 253.5759,
-      "position": -72.3,
+      "position": -68.6,
       "zone": "below the band"
     }
   },
   "shares_m": 18.933159,
   "benchmark": {
     "symbol": "^GSPC",
-    "close": 6910.39013671875
+    "close": 7297.490234375
   },
   "gate": {
     "ticker": "RH",
     "status": "pass",
-    "findings": [
-      {
-        "check": "estimate_age",
-        "severity": "warn",
-        "detail": "analyst estimates last updated 2026-10-20 (32 days ago); say so if the band is quoted",
-        "fixed": false,
-        "fix": ""
-      }
-    ]
+    "findings": []
   }
 }
