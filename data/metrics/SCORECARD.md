@@ -30,6 +30,10 @@ A call works when a stock below or near the low end of the band beats the S&P 50
 
 | Date | Ticker | Gate | Fixes | Holds | Issue |
 |---|---|---|---|---|---|
+| 2026-11-28 | TSLA | pass | 0 | 0 | https://github.com/hvelichety/investment_app/issues/32 |
+| 2026-11-28 | SPCX | pass | 0 | 0 | https://github.com/hvelichety/investment_app/issues/31 |
+| 2026-11-28 | RH | pass | 0 | 0 | https://github.com/hvelichety/investment_app/issues/33 |
+| 2026-11-28 | NVDA | pass | 0 | 0 | https://github.com/hvelichety/investment_app/issues/34 |
 | 2026-11-21 | TSLA | pass | 0 | 0 | https://github.com/hvelichety/investment_app/issues/28 |
 | 2026-11-21 | SPCX | pass | 0 | 0 | https://github.com/hvelichety/investment_app/issues/27 |
 | 2026-11-21 | RH | pass | 0 | 0 | https://github.com/hvelichety/investment_app/issues/29 |
